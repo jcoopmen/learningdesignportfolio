@@ -293,3 +293,7 @@ a.preview { display: block; }
 /* Captions clear the offset shadow under each image. */
 .demo { gap: 1.875rem; }
 .shots figure { gap: 1.375rem; }
+
+/* About reads larger than the AI section. */
+.band--about div > p:not(.actions) { font-size: 1.3125rem; line-height: 1.5; }
+.band--ai .lede { font-size: 1.125rem; }
