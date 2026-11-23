@@ -1,0 +1,36 @@
+:root {
+  --mighty-theme-color: #356762;
+}
+
+/* Type Style: 3JdZkO8ee1LZ8BHnJ2xry */
+.mighty-type-style-3JdZkO8ee1LZ8BHnJ2xry {
+
+    font-family: "Manrope" !important;
+    --mighty-font-family: "Manrope" !important;
+
+
+
+
+
+
+
+
+}
+
+@media (min-width: 1280px) {
+.mighty-type-style-3JdZkO8ee1LZ8BHnJ2xry {
+    font-size: 20px;
+}
+}
+
+@media (min-width: 600px) and (max-width: 1279px) {
+.mighty-type-style-3JdZkO8ee1LZ8BHnJ2xry {
+    font-size: 19px;
+}
+}
+
+@media (max-width: 599px) {
+.mighty-type-style-3JdZkO8ee1LZ8BHnJ2xry {
+    font-size: 18px;
+}
+}
