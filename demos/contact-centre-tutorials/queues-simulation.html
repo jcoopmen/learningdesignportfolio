@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queues Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* 9-8-8 brand layer (yellow, blue, green; Roboto headings, Lora body) wraps a neutral mock of the phone system.
+   Layout: full-viewport app; instructions float beside the control they describe. Single light theme by choice. */
+:root{
+  --yellow:#FDDA64; --blue:#B8D8EB; --green:#1d1d1b; --ink:#1d1d1b; --paper:#ffffff; --hair:#dcdcd6; --soft:#5a5a55; --blue-tint:#f0f6fa; --page:#f6f6f3; --good:#235B4E; --bad:#a3271d;
+  --app-bg:#ededf5; --app-surface:#ffffff; --app-line:#d6d6e3; --app-ink:#22222d; --app-muted:#676778;
+  --app-accent:#2a5fc4; --app-soft:#e6e9f8; --go:#2fa84f; --stop:#dc2626;
+  --head:"Roboto","Helvetica Neue",Arial,sans-serif; --body:"Lora",Georgia,"Times New Roman",serif;
+  --ui:system-ui,-apple-system,"Segoe UI",Arial,sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--app-bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;display:flex;flex-direction:column;min-height:560px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer} button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+[hidden]{display:none!important}
+svg.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+/* mock app, edge to edge */
+.sim{flex:1;min-height:0;display:flex}
+.app{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;background:var(--app-surface);color:var(--app-ink);font-family:var(--ui);font-size:15px}
+.appscroll{flex:1;overflow:auto;display:flex}
+.appinner{flex:1;min-width:900px;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--app-line)}
+.topbar .menu{border:1px solid var(--app-accent);color:var(--app-accent);background:var(--app-surface);border-radius:6px;padding:5px 12px;font-size:14px}
+.topbar .search{flex:0 1 340px;border:1px solid var(--app-line);border-radius:6px;padding:7px 12px;font-size:14px;color:var(--app-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .sp{flex:1}
+.ib{border:1px solid transparent;background:var(--app-soft);border-radius:8px;width:40px;height:40px;display:inline-grid;place-items:center;color:var(--app-ink);padding:0}
+.ib:hover:not(:disabled){border-color:var(--app-accent)}
+.ib.on{background:var(--app-accent);color:#fff}
+.ib:disabled{opacity:.45}
+.ib.end{background:var(--stop);color:#fff}
+.ib.dot{position:relative}
+.ib.dot::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--stop);border:2px solid var(--app-surface)}
+.onq{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:#1f3f8f;background:var(--app-soft);border-radius:8px;padding:9px 12px}
+.onq i{width:32px;height:17px;border-radius:99px;background:#1f3f8f;position:relative;display:block}
+.onq i::after{content:"";position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--app-line);display:grid;place-items:center;color:var(--app-muted)}
+.profile{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--app-bg)}
+.profile .big{width:120px;height:120px;border-radius:50%;background:var(--app-line);display:grid;place-items:center;color:var(--app-muted)}
+.profile .big svg{width:64px;height:64px}
+.profile b{font-size:26px;font-weight:400}
+.profile small{color:var(--app-muted);font-size:14px}
+.profile .st{color:var(--app-accent);font-weight:700;font-size:13px}
+.ws{flex:1;display:grid;grid-template-columns:270px minmax(0,1fr) auto;position:relative;min-height:0}
+.conv{border-right:1px solid var(--app-line);padding:14px;display:flex;flex-direction:column;gap:12px}
+.convhead{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15px}
+.convhead span{flex:1}
+.convhead .ib{width:34px;height:34px}
+.convhead svg.ic{width:17px;height:17px}
+.convempty{color:var(--app-muted);font-size:14px;text-align:center;margin-top:48px}
+.convcard{border:2px solid var(--app-accent);border-radius:8px;padding:10px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.convcard div{background:var(--app-soft);border-radius:6px;padding:8px 10px}
+.convcard small{display:block;color:var(--app-muted)}
+.main{background:var(--app-bg);min-width:0;display:flex;flex-direction:column}
+.waiting{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--app-muted);text-align:center;padding:24px}
+.waiting b{font-size:22px;font-weight:400;color:var(--app-ink)}
+.callhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 16px;background:var(--app-surface);border-bottom:1px solid var(--app-line)}
+.callhead .who{display:flex;align-items:center;gap:10px;margin-right:10px}
+.callhead .who b{display:block;font-size:15px;line-height:1.2}
+.callhead .who small{font-family:var(--mono);font-size:12.5px;color:var(--app-muted)}
+.callhead .grp{display:flex;gap:6px}
+.callhead .sp{flex:1}
+.badge{font-size:13px;font-weight:700;border-radius:99px;padding:3px 11px;background:var(--app-soft);color:#1f3f8f}
+.script{margin:18px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:18px;max-width:760px}
+.script h3{margin:0 0 10px;font-size:17px}
+.script dl{margin:0;display:grid;grid-template-columns:150px 1fr;gap:8px 12px;font-size:14.5px}
+.script dt{font-weight:700} .script dd{margin:0}
+.script .links{display:flex;flex-direction:column;gap:8px}
+.script .links button{border:1px solid var(--app-line);background:var(--app-bg);border-radius:6px;padding:8px 10px;font-size:13.5px;text-align:left}
+.event{margin:0 18px 18px;max-width:760px;border-left:4px solid var(--app-accent);background:var(--app-surface);border-radius:0 8px 8px 0;padding:12px 14px;font-size:15px}
+.event b{display:block;font-size:13px;color:var(--app-muted)}
+.acw{width:310px;border-left:1px solid var(--app-line);background:var(--app-surface);display:flex;flex-direction:column}
+.acw header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--app-line);font-weight:700}
+.acw .timer{display:flex;justify-content:space-between;padding:10px 14px;font-size:14px}
+.acw .timer span{font-family:var(--mono);color:var(--stop)}
+.acw input{margin:0 14px 8px;border:1px solid var(--app-line);border-radius:6px;padding:8px 10px;font-size:14px;background:var(--app-surface);width:calc(100% - 28px)}
+.codes{list-style:none;margin:0;padding:0 8px;flex:1}
+.codes button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 8px;border-radius:6px;font-size:14px;line-height:1.35}
+.codes button:hover{background:var(--app-bg)}
+.codes button.sel{background:var(--app-soft);font-weight:700}
+.acw footer{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--app-line);font-size:12.5px;color:var(--app-muted)}
+.acw footer div{flex:1;min-width:0}
+.acw footer b{display:block;color:var(--app-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.done{border:0;border-radius:6px;background:var(--app-accent);color:#fff;font-weight:700;padding:9px 16px;font-size:14px}
+.done:disabled{opacity:.4}
+.mc{position:absolute;left:190px;top:58px;width:330px;z-index:12;background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;padding:20px;box-shadow:0 14px 30px -12px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:12px}
+.mc h3{margin:0;font-size:19px;font-weight:400}
+.field{position:relative}
+.field input{width:100%;border:1px solid var(--app-line);border-radius:6px;padding:10px 12px;font-size:14.5px;background:var(--app-surface)}
+.field input:focus{outline:2px solid var(--app-accent);outline-offset:0}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--app-line);border-radius:6px;padding:9px 12px;font-size:14.5px}
+.chip span{flex:1}
+.chip button{border:0;background:none;font-size:18px;line-height:1;padding:0 4px;color:var(--app-muted)}
+.results{position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:14;background:var(--app-surface);border:1px solid var(--app-line);border-radius:6px;box-shadow:0 10px 22px -10px rgba(0,0,0,.4);padding:6px;font-size:14px}
+.results .lbl{font-weight:700;padding:4px 6px;font-size:13px}
+.results button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px;border-radius:5px}
+.results button:hover{background:var(--app-soft)}
+.results button small{display:block;color:var(--app-muted)}
+.results.tall{min-height:170px;color:var(--app-muted)} .results.tall p{margin:6px}
+.dialwrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0 2px}
+.dial{width:72px;height:72px;border-radius:50%;border:0;background:var(--app-line);color:#fff;display:grid;place-items:center}
+.dial svg{width:32px;height:32px}
+.dial:not(:disabled){background:var(--go)}
+.dialwrap span{font-size:13px;color:var(--app-accent)}
+.toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:var(--paper);color:var(--ink);border:1px solid var(--hair);border-left:5px solid var(--blue);box-shadow:0 12px 32px -12px rgba(0,0,0,.35);padding:10px 16px;border-radius:8px;font-size:14.5px;z-index:30;max-width:90%;text-align:center;font-family:var(--head)}
+.ring{position:absolute;z-index:25;pointer-events:none;border:2px solid var(--green);border-radius:10px;box-shadow:0 0 0 4px rgba(253,218,100,.75);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(253,218,100,.3)}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}}
+
+/* training layer */
+.tag{font-family:var(--head);font-size:14px;font-weight:500;margin:0;display:flex;align-items:center;gap:8px;color:var(--soft)}
+.tag span{background:var(--yellow);color:var(--ink);font-weight:900;border-radius:99px;padding:4px 10px;line-height:1}
+.panel.welcome{max-width:560px}
+.plan{list-style:none;margin:0;padding:0;counter-reset:pl;display:flex;flex-direction:column;gap:12px;font-size:16px}
+.plan li{counter-increment:pl;display:grid;grid-template-columns:34px 1fr;column-gap:12px}
+.plan li::before{content:counter(pl);grid-row:span 2;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);font-family:var(--head);font-weight:700;display:grid;place-items:center}
+.plan b{font-family:var(--head)}
+.plan span{color:#44443f}
+.fab{position:fixed;left:16px;bottom:16px;z-index:45;width:52px;height:52px;border-radius:50%;border:1.5px solid var(--ink);background:var(--yellow);color:var(--ink);display:grid;place-items:center;box-shadow:0 8px 20px -8px rgba(0,0,0,.45)}
+.fab:hover{background:#ffe588}
+.tmenu{position:fixed;left:16px;bottom:78px;z-index:46;width:290px;max-width:calc(100vw - 32px);background:var(--paper);border:1px solid var(--hair);border-radius:10px;padding:16px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px}
+.tmenu h2{font-family:var(--head);font-size:19px;margin:0}
+.tmenu .stage{margin:4px 0 0;font-family:var(--head);font-size:14px;color:var(--soft)}
+.tmenu .track{display:block;height:6px;border-radius:99px;background:var(--hair);overflow:hidden}
+.tmenu .track i{display:block;height:100%;background:var(--ink);transition:width .3s}
+.mitems{display:flex;flex-direction:column;margin:6px -8px -6px;border-top:1px solid var(--hair);padding-top:6px}
+.mitems button{border:0;background:none;text-align:left;font-family:var(--head);font-size:15px;font-weight:500;padding:9px 8px;border-radius:6px}
+.mitems button:hover{background:var(--page)}
+.callout{position:fixed;z-index:40;width:310px;max-width:calc(100vw - 16px);background:var(--paper);color:var(--ink);border:1px solid var(--hair);border-left:5px solid var(--yellow);border-radius:10px;padding:16px 18px 16px 16px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px;transition:left .25s,top .25s}
+@media (prefers-reduced-motion:reduce){.callout{transition:none}}
+.callout p,.brief p{margin:0}
+.count{font-family:var(--head);font-size:13.5px;font-weight:500;margin:0;color:var(--soft)}
+.callout h2,.panel h2,.brief h2{font-family:var(--head);font-weight:700;margin:0;text-wrap:balance}
+.callout h2{font-size:19px;line-height:1.2}
+.code{font-family:var(--mono);font-size:.88em;background:var(--blue-tint);border:1px solid var(--blue);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.why{align-self:flex-start;border:0;background:none;padding:0;font-family:var(--head);font-size:14px;font-weight:500;text-decoration:underline;color:var(--green)}
+.know{border-top:1px solid var(--hair);padding-top:10px;font-size:15px;color:#33332f}
+.know ol{margin:4px 0 0;padding-left:22px}
+.nudge{background:#fbf0ee;border-left:3px solid var(--bad);color:var(--bad);padding:8px 10px;font-size:15px}
+.okmsg{font-family:var(--head);font-weight:700;color:var(--good)}
+.okmsg::before{content:"✓ "}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font-family:var(--head);border:1.5px solid var(--green);background:var(--paper);color:var(--green);border-radius:8px;padding:9px 16px;font-weight:700;font-size:15px}
+.btn.primary{background:var(--green);color:#fff}
+.btn:disabled{opacity:.4}
+.brief{position:fixed;left:16px;bottom:80px;z-index:40;width:330px;max-width:calc(100vw - 28px);background:var(--paper);border:1px solid var(--hair);border-left:5px solid var(--yellow);border-radius:10px;padding:12px 16px 14px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
+.briefhead{display:flex;justify-content:space-between;border:0;background:none;padding:0;font-family:var(--head);font-weight:700;font-size:17px;text-align:left}
+.brief ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(29,29,27,.35);display:grid;place-items:center;padding:16px}
+.panel{background:var(--paper);border:1px solid var(--hair);border-top:5px solid var(--yellow);border-radius:12px;box-shadow:0 18px 44px -18px rgba(0,0,0,.4);padding:32px;max-width:520px;display:flex;flex-direction:column;gap:16px;font-size:17px}
+.panel p{margin:0}
+.panel h2{font-size:28px}
+.cards{flex:1;min-height:0;overflow:auto;background:var(--page);display:flex;justify-content:center;align-items:flex-start;padding:32px 16px}
+.cards .panel{max-width:720px;width:100%;border-top-color:var(--blue)}
+fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+legend{font-family:var(--head);font-weight:700;font-size:24px;line-height:1.25;padding:0;margin-bottom:14px;text-wrap:balance}
+fieldset label{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--hair);border-radius:10px;cursor:pointer}
+fieldset label:hover{border-color:var(--green)}
+fieldset label:has(input:checked){border-color:var(--ink);background:var(--blue-tint);box-shadow:inset 4px 0 0 var(--blue)}
+fieldset input{margin-top:5px;accent-color:var(--green)}
+.score{display:flex;flex-wrap:wrap;gap:20px;align-items:baseline;font-family:var(--head);font-variant-numeric:tabular-nums}
+.score strong{font-size:52px;line-height:1;font-weight:900;box-shadow:inset 0 -10px 0 var(--yellow)}
+.panel h3{font-family:var(--head);font-size:18px;margin:6px 0 0}
+.res{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:16px}
+.res li{display:grid;grid-template-columns:84px 1fr;gap:12px;border:1px solid var(--hair);border-radius:8px;padding:10px 12px;align-items:start}
+.res small{display:block;color:#4d4d4a;font-size:15px;margin-top:2px}
+.pill{font-family:var(--head);font-size:12.5px;font-weight:700;text-align:center;border-radius:99px;padding:4px 8px;white-space:nowrap}
+.pill{border:1px solid currentColor;background:none}
+.pill.ok{color:var(--good);background:#eaf3f0}
+.pill.no{color:var(--bad);background:#fbf0ee}
+
+/* queues mock */
+.app{--st:#3aa655}
+.onq{border:0;cursor:pointer}
+.onq[aria-checked="false"]{color:var(--app-muted)}
+.onq[aria-checked="false"] i{background:var(--app-line)}
+.onq[aria-checked="false"] i::after{right:auto;left:2px}
+.avbtn{width:40px;height:40px;border-radius:50%;background:var(--app-line);display:grid;place-items:center;color:var(--app-muted);border:3px solid var(--st);padding:0}
+.profile .big{border:5px solid var(--st)}
+.profile .st{color:var(--st)}
+.pp{position:absolute;right:14px;top:62px;width:600px;z-index:12;background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;box-shadow:0 14px 30px -12px rgba(0,0,0,.4);display:grid;grid-template-columns:170px 1fr}
+.pp .sts{border-right:1px solid var(--app-line);padding:8px;display:flex;flex-direction:column;gap:2px}
+.pp .sts button{display:flex;align-items:center;gap:10px;border:0;background:none;padding:8px;border-radius:6px;font-size:14px;text-align:left}
+.pp .sts button:hover{background:var(--app-bg)}
+.pp .sts button::before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid var(--app-muted);flex:none}
+.pp .sts button[aria-checked="true"]{background:var(--app-bg);font-weight:700}
+.pp .sts button[aria-checked="true"]::before{border-color:var(--st);background:radial-gradient(var(--st) 45%,transparent 50%)}
+.pp .info{padding:16px;display:flex;flex-direction:column;gap:12px}
+.pp .who{display:flex;gap:14px;align-items:center}
+.pp .who .av{width:84px;height:84px;border-radius:50%;background:var(--app-line);border:4px solid var(--st);display:grid;place-items:center;color:var(--app-muted);flex:none}
+.pp .who .av svg{width:44px;height:44px}
+.pp .who b{font-size:20px;font-weight:400;display:block}
+.pp .who small{color:var(--app-muted);display:block}
+.pp .phone{border:1px solid var(--app-line);border-radius:6px;padding:10px 12px;color:var(--app-muted);font-size:14.5px}
+.pp .aq{border:1px solid var(--app-accent);color:var(--app-accent);background:var(--app-surface);border-radius:6px;padding:10px;font-size:14px}
+.pp .aq:hover{background:var(--app-soft)}
+.pp .foot{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--app-line)}
+.pp .foot button{border:0;background:none;padding:11px;font-size:14px;color:var(--app-muted)}
+.qpage{flex:1;background:var(--app-surface);display:flex;flex-direction:column}
+.qhead{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:var(--app-bg);font-weight:700}
+.qhead .ib{background:none}
+.qcols{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:16px 20px}
+.qt header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+.qt h3{margin:0;font-size:20px;font-weight:400;color:var(--app-muted)}
+.qt input{border:0;border-bottom:1px solid var(--app-line);padding:6px 4px;font-size:14px;width:200px;background:transparent}
+.qt .colh{border-bottom:2px solid var(--app-accent);padding:7px 6px;font-size:14px;color:var(--app-muted)}
+.qt ul{list-style:none;margin:0;padding:0;min-height:220px}
+.qt li{display:flex;justify-content:space-between;align-items:center;padding:6px;font-size:15px;min-height:44px}
+.qt li:nth-child(odd){background:#f7f7fb}
+.qt li button{border:0;background:none;color:var(--app-accent);font-weight:700;font-size:14px;padding:6px 10px;border-radius:6px}
+.qt li button:hover{background:var(--app-soft)}
+.qt .none{justify-content:center;color:var(--app-muted);background:none!important}
+.qt footer{border-top:1px solid var(--app-line);padding-top:10px;text-align:center;font-size:13px;color:var(--app-muted)}
+.notice{position:absolute;right:0;top:62px;width:390px;z-index:20;background:#2b2e35;color:#fff;font-size:15px;box-shadow:0 14px 30px -10px rgba(0,0,0,.5)}
+.notice p{margin:0;padding:14px 40px 14px 18px;line-height:1.4}
+.notice .x{position:absolute;right:6px;top:6px;border:0;background:none;color:#fff;font-size:18px;padding:4px 8px}
+.notice .acts{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #4a4e58}
+.notice .acts button{border:0;background:#3a3e47;color:#fff;padding:11px;font-size:15px}
+.notice .acts button+button{border-left:1px solid #4a4e58}
+.notice .acts button:hover{background:#4a4e58}
+.notice :focus-visible{outline-color:#fff}
+
+/* closer layouts (still neutral: no vendor logos or brand artwork) */
+.gprof{position:relative;background:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 0 34px;border-bottom:1px solid var(--app-line)}
+.gprof .vpp{position:absolute;left:16px;top:14px;border:0;background:var(--app-soft);border-radius:4px;padding:6px 12px;font-size:12px;font-weight:700}
+.gprof .big{width:104px;height:104px;border-radius:50%;background:#b9b9bf;border:4px solid var(--st);display:grid;place-items:center;color:#fff}
+.gprof .big svg{width:60px;height:60px}
+.gprof .st{color:var(--st);font-weight:700;font-size:11.5px}
+.gprof b{font-size:25px;font-weight:300}
+.gprof small{font-size:13px}
+.gprof em{color:var(--app-muted);font-size:13px;font-style:normal;margin-top:6px}
+.gprof .mailb{position:absolute;bottom:-24px;width:48px;height:48px;border-radius:50%;background:var(--app-accent);color:#fff;display:grid;place-items:center}
+.gbelow{flex:1;background:var(--app-bg);display:flex;flex-direction:column;align-items:center;gap:22px;padding:44px 16px 24px}
+.addsec{border:0;background:#dfe1ee;border-radius:4px;padding:7px 14px;font-size:12px;font-weight:700}
+.gcards{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:640px;max-width:100%}
+.gcards>div{background:#fff;padding:16px 18px;font-size:13px;min-height:130px}
+.gcards h4{margin:0 0 12px;font-size:16px;font-weight:400;color:var(--app-muted)}
+.gcards p{margin:0 0 10px}
+.tabsx{display:flex;gap:28px;font-size:12px;border-bottom:1px solid var(--app-line);padding-bottom:6px}
+.tabsx span,.lk{color:var(--app-accent)}
+.pwrapv{flex:1;display:flex;flex-direction:column}
+
+.pp{width:640px;grid-template-columns:160px 1fr;top:60px;right:8px;border-radius:2px}
+.pp .sts{gap:0;padding:0}
+.pp .sts button{border-radius:0;padding:10px 12px}
+.pp .who .av{width:110px;height:110px;background:#b9b9bf;color:#fff}
+.pp .who .av svg{width:62px;height:62px}
+.pp .who b{font-size:22px;font-weight:300}
+.pp .who small{font-size:13.5px;color:var(--app-ink)}
+.pp .wom,.pp .phone{border:1px solid var(--app-line);padding:11px 12px;color:var(--app-muted);font-size:15px;border-radius:0;display:flex;justify-content:space-between}
+.pp .foot .ooo{color:var(--app-accent)}
+.pp .foot button{color:var(--app-ink)}
+.notice{width:440px;padding-left:46px;top:60px}
+.notice .bell{position:absolute;left:0;top:0;bottom:0;width:46px;background:#1f2126;display:grid;place-items:center;color:#7aa2f7}
+.notice p{font-size:16px}
+.qhead{font-size:13.5px}
+.qt h3{color:var(--app-ink);font-weight:300;font-size:22px}
+
+/* ---- training layer, revised look: rounded cards, yellow step chip and highlighter headings in place of edge bars ---- */
+.callout{border:1px solid var(--hair);border-radius:16px;padding:18px 20px;box-shadow:0 16px 40px -14px rgba(0,0,0,.42)}
+.callout .count{align-self:flex-start;background:var(--yellow);color:var(--ink);border-radius:99px;padding:3px 12px;font-size:12.5px;font-weight:700}
+.brief{border:1px solid var(--hair);border-radius:16px;padding:14px 18px 16px}
+.briefhead span:first-child,.tmenu h2,.panel h2{background-image:linear-gradient(transparent 62%,var(--yellow) 62%);padding:0 4px;margin-left:-4px}
+.panel h2{align-self:flex-start}
+.panel{border:1px solid var(--hair);border-radius:18px}
+.cards .panel{border-top-color:var(--hair)}
+.tmenu{border-radius:16px}
+.fab{border-radius:16px;border:0;background:var(--ink);color:var(--yellow)}
+.fab:hover{background:#34342f}
+.btn{border-radius:99px;padding:9px 20px}
+.ring{border-radius:12px}
+.toast{background:var(--ink);color:#fff;border:0;border-radius:12px}
+.plan li::before{border:0;background:var(--yellow)}
+.score strong{box-shadow:none;background-image:linear-gradient(transparent 62%,var(--yellow) 62%);padding:0 6px}
+.mitems a,.mitems button{display:block;text-decoration:none;color:var(--ink)}
+fieldset label{border-radius:14px}
+.res li{border-radius:12px}
+</style>
+</head>
+<body>
+<section class="sim" id="simView">
+<div class="app" id="app">
+  <div class="appscroll" id="appscroll"><div class="appinner">
+    <div class="topbar">
+      <button class="menu" data-inert>≡ Menu</button>
+      <span class="search">Search for pages, users, groups and locations</span>
+      <span class="sp"></span>
+      <button class="ib" data-inert title="Help" aria-label="Help"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.500"/><path d="M8 8a2 2 0 1 1 3 1.700c-.7.4-1 .8-1 1.600M10 14v.2"/></svg></button>
+      <button class="ib" data-inert title="Calls" aria-label="Calls"><svg class="ic" viewBox="0 0 20 20"><path d="M5.500 3h2.700l1.300 3.600-1.800 1.400a8.500 8.500 0 0 0 4.300 4.300l1.400-1.800 3.600 1.300v2.700a1.500 1.500 0 0 1-1.600 1.500C9.300 15.600 4.400 10.700 4 4.600A1.500 1.500 0 0 1 5.500 3z"/></svg></button>
+      <button class="ib" data-inert title="Chat" aria-label="Chat"><svg class="ic" viewBox="0 0 20 20"><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg></button>
+      <button class="ib" data-inert title="Inbox" aria-label="Inbox"><svg class="ic" viewBox="0 0 20 20"><path d="M3 11l2-7h10l2 7v5H3zM3 11h4l1 2h4l1-2h4"/></svg></button>
+      <button class="ib" data-inert title="Agent Workspace" aria-label="Agent Workspace"><svg class="ic" viewBox="0 0 20 20"><circle cx="8" cy="7" r="3"/><path d="M2.500 17c.5-3.500 2.800-5 5.500-5s5 1.500 5.500 5M14.500 5a3.500 3.500 0 0 1 0 4.500M16.500 3.500a6 6 0 0 1 0 7.500"/></svg></button>
+      <button class="onq" id="btnQueue" role="switch" aria-checked="false"><span id="queueLabel">Off Queue</span> <i></i></button>
+      <button class="avbtn" id="btnProfile" title="Profile" aria-label="Profile" aria-haspopup="true" aria-expanded="false"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg></button>
+    </div>
+    <div class="pwrapv" id="viewProfile"><div class="gprof"><button class="vpp" data-inert>View Public Profile</button>
+        <span class="big"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg></span><span class="st" id="pfStatus">Available</span><b>Training User</b><small>988 Hub Responder</small><em>What's on your mind?</em>
+        <span class="mailb"><svg class="ic" viewBox="0 0 20 20"><path d="M3 5h14v10H3zM3 6l7 5 7-5"/></svg></span></div>
+      <div class="gbelow"><button class="addsec" data-inert>+ Add New Section</button>
+        <div class="gcards"><div><h4>Groups</h4><p class="tabsx"><u>Official</u><span>Social</span><span>Owned</span></p><p>988 - Agents</p></div><div><h4>Contact Information</h4><p><small>Main Email</small><br><span class="lk">traininguser@988.ca</span></p><p><small>Work Email</small><br><span class="lk">traininguser@988.ca</span></p></div></div></div></div>
+    <div class="qpage" id="viewQueues" hidden>
+      <div class="qhead"><span>Which queues are you working today?</span><button class="ib" id="btnRefresh" title="Reload" aria-label="Reload"><svg class="ic" viewBox="0 0 20 20"><path d="M16 10a6 6 0 0 1-10.500 4M4 10a6 6 0 0 1 10.500-4M14.500 3v3h-3M5.500 17v-3h3"/></svg></button></div>
+      <div class="qcols">
+        <section class="qt" aria-label="Active queues"><header><h3>Active</h3><input id="sActive" type="text" placeholder="Search for queues" aria-label="Search active queues" autocomplete="off"></header><div class="colh">Queue ▾</div><ul id="listActive"></ul><footer id="footActive"></footer></section>
+        <section class="qt" aria-label="Available queues"><header><h3>Available</h3><input id="sAvail" type="text" placeholder="Search for queues" aria-label="Search available queues" autocomplete="off"></header><div class="colh">Queue ▾</div><ul id="listAvail"></ul><footer id="footAvail"></footer></section>
+      </div>
+    </div>
+    <div class="pp" id="profPanel" hidden role="dialog" aria-label="Profile">
+      <div class="sts" id="sts" role="radiogroup" aria-label="Status"></div>
+      <div class="info">
+        <div class="who"><span class="av"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg></span><div><b>Training User</b><small>988 Hub Responder</small><small>988 Canada</small><small>No location available.</small></div></div>
+        <div class="wom">What's on your mind?</div><div class="phone"><span>Training User - WebRTC</span><span>⌄</span></div>
+        <button class="aq" id="btnActivateQueues">Activate Queues</button>
+      </div>
+      <div class="foot"><button data-inert class="ooo">Out of Office ›</button><button data-inert>Preferences</button><button data-inert>Logout</button></div>
+    </div>
+    <div class="notice" id="notice" hidden role="alertdialog" aria-label="Queue activation changed">
+      <span class="bell" aria-hidden="true"><svg class="ic" viewBox="0 0 20 20"><path d="M5.500 14V9a4.500 4.500 0 0 1 9 0v5l1.500 1.500H4zM8.500 17h3" fill="currentColor"/></svg></span><button class="x" id="btnNoticeX" aria-label="Close">×</button>
+      <p>Activation for this queue has been changed. Reload if you would like to see the updated activation status.</p>
+      <div class="acts"><button id="btnOk">OK</button><button id="btnReload">Reload</button></div>
+    </div>
+  </div></div>
+  <div class="ring" id="ring" hidden></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+</section>
+<section class="cards" id="cardView" hidden></section>
+<div class="callout" id="callout" role="region" aria-label="Practice step" aria-live="polite" hidden></div>
+<aside class="brief" id="brief" aria-label="Scenario task" hidden></aside>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Practice complete" hidden></div>
+<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="welTitle">
+  <div class="panel welcome">
+    <p class="tag"><span>9-8-8</span> Technology Training</p>
+    <h2 id="welTitle">Queues</h2>
+    <p>Practise activating and deactivating queues and going On Queue in a copy of the phone system. Nothing here is live, so you will not receive interactions.</p>
+    <ol class="plan">
+      <li><b>Guided practice</b><span>Nine steps, each one highlighted on the screen.</span></li>
+      <li><b>Scenario</b><span>Set up your queues for a shift on your own, with no highlights.</span></li>
+      <li><b>Knowledge check</b><span>Four short questions, then your results.</span></li>
+    </ol>
+    <div class="row"><button class="btn primary" data-act="begin" id="btnBegin">Start practice</button><button class="btn" data-act="assess">Go straight to the scenario</button></div>
+  </div>
+</div>
+<button class="fab" id="fab" data-act="menu" aria-haspopup="true" aria-expanded="false" aria-controls="menuPop" aria-label="Training menu" title="Training menu"><svg class="ic" viewBox="0 0 20 20" stroke-width="2"><path d="M4 6h12M4 10h12M4 14h12"/></svg></button>
+<div class="tmenu" id="menuPop" hidden>
+  <p class="tag"><span>9-8-8</span> Technology Training</p>
+  <h2>Queues</h2>
+  <p class="stage" aria-live="polite" id="stageLabel"></p>
+  <span class="track" aria-hidden="true"><i id="prog"></i></span>
+  <div class="mitems">
+    <button data-act="home">All simulations</button>
+    <button id="btnSkip" data-act="assess">Skip to the scenario</button>
+    <button id="btnRestart" data-act="restartAny">Start over</button>
+    <button data-act="full">Full screen</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const show=(el,on)=>{el.hidden=!on;};
+const esc=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const mmss=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+const SMS='SMS-EN/FR', NAT='National Responders', PROV='Provincial Responders';
+const START={practice:{[SMS]:true,[NAT]:false,[PROV]:false},assess:{[SMS]:false,[NAT]:true,[PROV]:true}};
+const STATUSES=['Available','Busy','Away','Break','Meal','Meeting','Training'];
+const STCOL={Available:'#3aa655','On Queue':'#2a8fd6',Busy:'#d32f2f',Meeting:'#d32f2f',Training:'#d32f2f',Away:'#d98a00',Break:'#d98a00',Meal:'#d98a00'};
+let mode='practice', S;
+function reset(m){
+  S={view:'profile',panel:false,notice:false,status:'Available',onQueue:false,q:Object.assign({},START[m]),shown:Object.assign({},START[m]),dirty:false};
+  $('sActive').value=''; $('sAvail').value='';
+}
+function list(active){
+  const f=$(active?'sActive':'sAvail').value.trim().toLowerCase();
+  const all=Object.keys(S.shown).filter(n=>S.shown[n]===active), names=all.filter(n=>n.toLowerCase().includes(f));
+  $(active?'listActive':'listAvail').innerHTML=names.map(n=>'<li><span>'+esc(n)+'</span><button data-q="'+esc(n)+'">'+(active?'Deactivate':'Activate')+'</button></li>').join('')||'<li class="none">No data available</li>';
+  $(active?'footActive':'footAvail').textContent=names.length?'1 - '+names.length+' of '+all.length+' Queues':'0 Queues';
+}
+function render(){
+  $('app').style.setProperty('--st',STCOL[S.status]);
+  show($('viewProfile'),S.view==='profile'); show($('viewQueues'),S.view==='queues');
+  show($('profPanel'),S.panel); $('btnProfile').setAttribute('aria-expanded',S.panel);
+  show($('notice'),S.notice);
+  $('btnQueue').setAttribute('aria-checked',S.onQueue); $('queueLabel').textContent=S.onQueue?'On Queue':'Off Queue';
+  $('pfStatus').textContent=S.status;
+  if(S.panel){ const sts=STATUSES.concat(S.onQueue?['On Queue']:[]); $('sts').innerHTML=sts.map(x=>'<button role="radio" aria-checked="'+(S.status===x)+'" data-st="'+x+'">'+x+'</button>').join(''); }
+  if(S.view==='queues'){ list(true); list(false); }
+}
+let toastTimer;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,3600); }
+function reload(toProfile){ S.shown=Object.assign({},S.q); S.dirty=false; S.notice=false; if(toProfile){ S.view='profile'; S.panel=false; } }
+
+$('app').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  if(b.hasAttribute('data-inert')){ toast('That control is not part of this simulation.'); return; }
+  const id=b.id;
+  if(id==='btnProfile'){ S.panel=!S.panel; }
+  else if(id==='btnQueue'){ S.onQueue=!S.onQueue; S.status=S.onQueue?'On Queue':'Available'; }
+  else if(b.dataset.st){ if(b.dataset.st!=='On Queue'){ S.status=b.dataset.st; S.onQueue=false; } }
+  else if(id==='btnActivateQueues'){ S.view='queues'; S.panel=false; }
+  else if(b.dataset.q){ const n=b.dataset.q; S.q[n]=!S.shown[n]; S.dirty=Object.keys(S.q).some(k=>S.q[k]!==S.shown[k]); S.notice=true; }
+  else if(id==='btnOk'||id==='btnNoticeX'){ S.notice=false; }
+  else if(id==='btnReload'){ reload(true); }
+  else if(id==='btnRefresh'){ reload(false); }
+  after();
+});
+$('sActive').addEventListener('input',()=>after()); $('sAvail').addEventListener('input',()=>after());
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&S.panel){ S.panel=false; after(); } });
+
+/* ---------- guided practice ---------- */
+const rowBtn=n=>document.querySelector('#viewQueues [data-q="'+n+'"]');
+const reloadTarget=()=>[S.notice?$('btnReload'):(S.view==='queues'?$('btnRefresh'):null)];
+const STEPS=[
+ {title:'Open your profile',side:'below',how:'Select the <b>Profile</b> icon at the top right of the screen.',
+  know:'A queue is where callers and texters virtually wait to interact with a responder. You manage your queues from your profile.',
+  target:()=>[$('btnProfile')],check:()=>S.panel||S.view==='queues'},
+ {title:'Go to your queues',side:'left',anchor:()=>[$('profPanel')],how:'Select <b>Activate Queues</b>.',
+  know:'You will see only the queues for which you are approved to take interactions. Queues are assigned based on your location, centre and interaction type.',
+  target:()=>[$('btnActivateQueues')],check:()=>S.view==='queues'},
+ {title:'Activate a voice queue',side:'left',how:'In the Available list, select <b>Activate</b> beside <span class="code">'+NAT+'</span>.',
+  know:'There are four voice call queues: Local Responders, National Responders, Provincial Responders and Regional Responders. The names correspond to how 9-8-8 calls are routed.',
+  target:()=>[rowBtn(NAT)],check:()=>S.q[NAT],
+  nudge:()=>S.q[PROV]?'That was Provincial Responders. For this practice, activate National Responders as well.':''},
+ {title:'Reload to see the change',side:'left',anchor:()=>[S.notice?$('notice'):$('btnRefresh')],how:'Select <b>Reload</b> on the black pop-up.',
+  know:'The lists do not update until the page reloads. After the reload you return to your profile, and the queue appears under Active the next time you open the lists.',
+  target:reloadTarget,check:()=>S.q[NAT]&&S.shown[NAT],
+  nudge:()=>!S.notice&&S.view==='queues'?'The pop-up is closed, so the lists still show the old status. Select the reload icon above the lists.':''},
+ {title:'Open your profile again',side:'below',how:'Select the <b>Profile</b> icon.',
+  know:'Next you will deactivate a queue. The path is the same: Profile, then Activate Queues.',
+  target:()=>[$('btnProfile')],check:()=>S.panel||S.view==='queues'||!S.q[SMS]},
+ {title:'Go to your queues',side:'left',anchor:()=>[$('profPanel')],how:'Select <b>Activate Queues</b>.',
+  know:'National Responders is now in the Active list.',
+  target:()=>[$('btnActivateQueues')],check:()=>S.view==='queues'||!S.q[SMS]},
+ {title:'Deactivate the SMS queue',side:'right',how:'In the Active list, select <b>Deactivate</b> beside <span class="code">'+SMS+'</span>.',
+  know:'9-8-8 has one queue for SMS interactions. To receive only voice interactions, deactivate the SMS queue. To receive only SMS interactions, deactivate all voice queues that you are assigned to.',
+  target:()=>[rowBtn(SMS)],check:()=>!S.q[SMS]},
+ {title:'Reload to see the change',side:'left',anchor:()=>[S.notice?$('notice'):$('btnRefresh')],how:'Select <b>Reload</b> on the black pop-up.',
+  know:'Selecting OK closes the pop-up without updating the lists.',
+  target:reloadTarget,check:()=>!S.q[SMS]&&!S.shown[SMS],
+  nudge:()=>!S.notice&&S.view==='queues'?'The pop-up is closed, so the lists still show the old status. Select the reload icon above the lists.':''},
+ {title:'Go On Queue',side:'below',how:'Change the toggle at the top right of the screen to <b>On Queue</b>.',
+  know:'This is what starts you receiving interactions. Your profile will be outlined in blue and your status will automatically be set as On Queue.',
+  target:()=>[$('btnQueue')],check:()=>S.onQueue}
+];
+let T={i:0,advancing:false,done:false};
+function placeRing(){
+  const ring=$('ring');
+  if(mode!=='practice'||T.done||T.advancing||welcome){ ring.hidden=true; return; }
+  const st=STEPS[T.i], els=st.target().filter(el=>el&&el.getClientRects().length); if(!els.length){ring.hidden=true;return;}
+  const ar=$('app').getBoundingClientRect(); let l=1e9,t=1e9,r=-1e9,b=-1e9;
+  els.forEach(el=>{const x=el.getBoundingClientRect(); l=Math.min(l,x.left);t=Math.min(t,x.top);r=Math.max(r,x.right);b=Math.max(b,x.bottom);});
+  ring.style.left=(l-ar.left-5)+'px'; ring.style.top=(t-ar.top-5)+'px'; ring.style.width=(r-l+10)+'px'; ring.style.height=(b-t+10)+'px';
+  ring.hidden=false;
+}
+function tutorCheck(){
+  if(mode!=='practice'||T.done||T.advancing)return;
+  if(STEPS[T.i].check()){
+    T.advancing=true; renderCoach(); placeRing();
+    setTimeout(()=>{ T.i++; T.advancing=false; if(T.i>=STEPS.length)T.done=true; placeRing(); renderCoach(); tutorCheck(); },900);
+  } else renderCoach();
+}
+function after(){ render(); if(mode==='practice')tutorCheck(); else renderCoach(); placeRing(); placeCallout(); }
+
+
+/* ---------- assessment ---------- */
+const CRIT=[
+ {text:'Activated the '+SMS+' queue',ok:()=>S.q[SMS],why:()=>SMS+' is not active, so you would receive no text interactions.'},
+ {text:'Deactivated the '+NAT+' queue',ok:()=>!S.q[NAT],why:()=>NAT+' is still active, so you could receive calls.'},
+ {text:'Deactivated the '+PROV+' queue',ok:()=>!S.q[PROV],why:()=>PROV+' is still active, so you could receive calls. To receive only SMS interactions, deactivate all voice queues that you are assigned to.'},
+ {text:'Reloaded so that the lists show your changes',ok:()=>!S.dirty,why:()=>'The lists still show an old status. Select Reload on the black pop-up after a change.'},
+ {text:'Went On Queue',ok:()=>S.onQueue,why:()=>'The toggle is set to Off Queue (status: '+S.status+'), so you would not receive interactions.'}
+];
+const QUIZ=[
+ {q:'What is a queue?',opts:['A list of responders who are on shift','Where callers and texters virtually wait to interact with a responder','A record of your past interactions','The form used to document a call'],a:1,why:'A queue is where callers and texters virtually wait to interact with a responder.'},
+ {q:'You want to receive only voice interactions. What do you do?',opts:['Deactivate all voice queues','Deactivate the SMS queue','Set your status to Busy','Switch the toggle to Off Queue'],a:1,why:'To receive only voice interactions, deactivate the SMS queue.'},
+ {q:'A colleague can see a queue in the phone system that you cannot. What is the most likely reason?',opts:['Your page needs to be reloaded','You are Off Queue','You see only the queues you are approved for','The queue is full'],a:2,why:'Responders see only the queues for which they are approved to take interactions.'},
+ {q:'What happens when you change the toggle to On Queue?',opts:['Every queue is activated','Your profile is outlined in blue and your status is set to On Queue','The page reloads','Your queues are deactivated'],a:1,why:'Your profile will be outlined in blue and your status will automatically be set as On Queue.'}
+];
+let A={start:0,secs:0,res:[],answers:[]};
+let whyOpen=false, briefOpen=true, lastStep=-1, welcome=true, menuOpen=false;
+function renderCoach(){
+  const co=$('callout'), br=$('brief'), ov=$('overlay');
+  // top strip
+  $('stageLabel').textContent=mode==='practice'?(T.done?'Guided practice complete':'Guided practice, step '+(T.i+1)+' of '+STEPS.length):mode==='assess'?'Scenario assessment':mode==='quiz'?'Knowledge check':'Results';
+  $('prog').style.width=(mode==='practice'?Math.round((T.i+(T.advancing?1:0))/STEPS.length*100):100)+'%';
+  show($('btnSkip'),mode==='practice'&&!T.done); $('btnRestart').textContent=mode==='assess'?'Restart the scenario':'Restart practice';
+  // practice callout
+  show($('menuPop'),menuOpen); $('fab').setAttribute('aria-expanded',menuOpen); show($('welcome'),welcome); show($('fab'),!welcome);
+  if(mode==='practice'&&!T.done&&!welcome){
+    if(lastStep!==T.i){ whyOpen=false; lastStep=T.i; }
+    const st=STEPS[T.i], n=T.advancing?'':(st.nudge?st.nudge():'');
+    const h='<p class="count">Step '+(T.i+1)+' of '+STEPS.length+'</p><h2>'+st.title+'</h2><p>'+st.how+'</p>'+
+      (T.advancing?'<p class="okmsg">Correct.</p>':'')+(n?'<p class="nudge">'+n+'</p>':'')+
+      (T.advancing?'':'<button class="why" data-act="why" aria-expanded="'+whyOpen+'">'+(whyOpen?'Hide the tip':'Show a tip')+'</button>'+(whyOpen?'<div class="know">'+st.know+'</div>':''));
+    if(co.dataset.h!==h){ co.innerHTML=h; co.dataset.h=h; }
+    show(co,true);
+  } else show(co,false);
+  // practice complete overlay
+  const pdone=mode==='practice'&&T.done;
+  if(pdone&&ov.hidden){ ov.innerHTML='<div class="panel"><h2>Practice complete</h2><p>You activated a queue, deactivated a queue and went On Queue.</p><p>Next is a scenario with no highlights. You are scored on how your queues are set when you submit.</p><div class="row"><button class="btn primary" data-act="assess">Start the scenario</button><button class="btn" data-act="restart">Repeat practice</button></div></div>'; }
+  show(ov,pdone);
+  // assessment brief
+  if(mode==='assess'){
+    const h='<button class="briefhead" data-act="brief" aria-expanded="'+briefOpen+'"><span>Your task</span><span aria-hidden="true">'+(briefOpen?'–':'+')+'</span></button>'+
+      (briefOpen?'<p>You are taking text interactions only for this shift.</p><ol><li>Set your queues so that you receive only SMS interactions.</li><li>Make sure the queue lists show your changes.</li><li>Start receiving interactions.</li></ol>':'')+
+      '<div class="row"><button class="btn primary" data-act="submit">Submit my setup</button></div>';
+    if(br.dataset.h!==h){ br.innerHTML=h; br.dataset.h=h; }
+    show(br,true);
+  } else show(br,false);
+  placeCallout();
+}
+function placeCallout(){
+  const co=$('callout'); if(co.hidden)return;
+  const st=STEPS[T.i]; let els=(st.anchor?st.anchor():st.target()).filter(el=>el&&el.getClientRects().length);
+  const vw=window.innerWidth, vh=window.innerHeight, w=co.offsetWidth, h=co.offsetHeight, G=16;
+  if(!els.length){ co.style.left=(vw-w)/2+'px'; co.style.top='80px'; return; }
+  let l=1e9,t=1e9,r=-1e9,b=-1e9; els.forEach(el=>{const x=el.getBoundingClientRect(); l=Math.min(l,x.left);t=Math.min(t,x.top);r=Math.max(r,x.right);b=Math.max(b,x.bottom);});
+  const pos={right:[r+G,t],left:[l-w-G,t],below:[l,b+G],above:[l,t-h-G]};
+  const fits=p=>p[0]>=8&&p[0]+w<=vw-8&&p[1]>=8&&p[1]+h<=vh-8;
+  const order=[st.side||'below','below','right','left','above'];
+  let p=pos[order.find(s=>fits(pos[s]))||order[0]];
+  if(!fits(p)){ const s=order[0]; p=pos[s].slice(); }
+  co.style.left=Math.max(8,Math.min(p[0],vw-w-8))+'px'; co.style.top=Math.max(8,Math.min(p[1],vh-h-8))+'px';
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b){ act(b.dataset.act); return; } if(menuOpen&&!e.target.closest('#menuPop')){ menuOpen=false; renderCoach(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&menuOpen){ menuOpen=false; renderCoach(); $('fab').focus(); } });
+
+function setStage(m){
+  mode=m; show($('simView'),m==='practice'||m==='assess'); show($('cardView'),m==='quiz'||m==='results');
+}
+let qi=0;
+function act(a){
+  if(a==='home'){ if(window.parent!==window){ window.parent.postMessage('sim-home','*'); } else { window.location.href='index.html'; } return; }
+  if(a==='menu'){ menuOpen=!menuOpen; renderCoach(); return; }
+  menuOpen=false;
+  if(a==='begin'){ welcome=false; after(); }
+  else if(a==='why'){ whyOpen=!whyOpen; renderCoach(); }
+  else if(a==='brief'){ briefOpen=!briefOpen; renderCoach(); }
+  else if(a==='full'){ renderCoach(); try{ const d=document.documentElement; (document.fullscreenElement?document.exitFullscreen():d.requestFullscreen()).catch(()=>toast('Full screen is not available here. Open the file in a browser tab.')); }catch(_){ toast('Full screen is not available here. Open the file in a browser tab.'); } }
+  else if(a==='restartAny'){ act(mode==='assess'?'resetAssess':'restart'); return; }
+  else if(a==='restart'){ reset('practice'); T={i:0,advancing:false,done:false}; lastStep=-1; setStage('practice'); after(); }
+  else if(a==='assess'||a==='resetAssess'){ welcome=false; reset('assess'); briefOpen=true; A={start:Date.now(),secs:0,res:[],answers:QUIZ.map(()=>-1)}; setStage('assess'); after(); }
+  else if(a==='submit'){ A.secs=Math.round((Date.now()-A.start)/1000); A.res=CRIT.map(c=>({ok:!!c.ok(),why:c.why()})); qi=0; setStage('quiz'); renderCoach(); placeRing(); renderQuiz(); }
+  else if(a==='next'){ const r=document.querySelector('input[name=q]:checked'); if(!r){ return; } A.answers[qi]=+r.value; qi++; if(qi<QUIZ.length)renderQuiz(); else { setStage('results'); renderCoach(); renderResults(); } }
+}
+function renderQuiz(){
+  const x=QUIZ[qi];
+  $('cardView').innerHTML='<div class="panel wide"><p class="count">Knowledge check, question '+(qi+1)+' of '+QUIZ.length+'</p>'+
+    '<form id="quizForm"><fieldset><legend>'+esc(x.q)+'</legend>'+x.opts.map((o,j)=>'<label for="qo'+j+'"><input type="radio" id="qo'+j+'" name="q" value="'+j+'"><span>'+esc(o)+'</span></label>').join('')+'</fieldset></form>'+
+    '<div class="row"><button class="btn primary" data-act="next" id="btnNext" disabled>'+(qi===QUIZ.length-1?'See my results':'Next question')+'</button></div></div>';
+  $('quizForm').addEventListener('submit',e=>e.preventDefault());
+  $('quizForm').addEventListener('change',()=>{$('btnNext').disabled=false;});
+  const f=$('cardView').querySelector('input'); if(f)f.focus();
+}
+function renderResults(){
+  const tp=A.res.filter(r=>r.ok).length, qp=QUIZ.filter((x,i)=>A.answers[i]===x.a).length, total=CRIT.length+QUIZ.length, pct=Math.round((tp+qp)/total*100);
+  $('cardView').innerHTML='<div class="panel wide"><h2>Your results</h2>'+
+    '<div class="score"><strong>'+pct+'%</strong><span>Scenario: '+tp+' of '+CRIT.length+'</span><span>Knowledge check: '+qp+' of '+QUIZ.length+'</span><span>Time on scenario: '+mmss(A.secs)+'</span></div>'+
+    '<h3>Scenario</h3><ul class="res">'+CRIT.map((c,i)=>{ const r=A.res[i]; return '<li><span class="pill '+(r.ok?'ok':'no')+'">'+(r.ok?'Met':'Not met')+'</span><div>'+esc(c.text)+(r.ok?'':'<small>'+esc(r.why)+'</small>')+'</div></li>'; }).join('')+'</ul>'+
+    '<h3>Knowledge check</h3><ul class="res">'+QUIZ.map((x,i)=>{ const ok=A.answers[i]===x.a;
+      return '<li><span class="pill '+(ok?'ok':'no')+'">'+(ok?'Correct':'Not yet')+'</span><div>'+esc(x.q)+'<small>'+(ok?'':'You chose: '+esc(x.opts[A.answers[i]])+'. Correct answer: '+esc(x.opts[x.a])+'. ')+esc(x.why)+'</small></div></li>'; }).join('')+'</ul>'+
+    '<div class="row"><button class="btn primary" data-act="assess">Retry the scenario</button><button class="btn" data-act="restart">Back to guided practice</button><button class="btn" data-act="home">All simulations</button></div></div>';
+  $('cardView').scrollTop=0;
+}
+
+
+reset('practice'); setStage('practice'); render(); renderCoach(); placeRing();
+window.addEventListener('resize',()=>{placeRing();placeCallout();}); $('appscroll').addEventListener('scroll',()=>{placeRing();placeCallout();});
+window.__sim={get S(){return S;},get T(){return T;}};
+})();
+</script>
+</body>
+</html>

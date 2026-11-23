@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create employee simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---------- Mock application (sizes in rem; 1rem = 1/128 of the viewport width, so proportions match the reference captures) ---------- */
+:root{
+  --a-blue:#0075be; --a-btn:#0079c1; --a-navy:#0b4f80; --a-line:#8a8a8a; --a-soft:#e4e4e4; --a-grey:#f5f5f5; --a-text:#222; --a-mute:#555; --a-red:#d8232a; --a-green:#2aa31f;
+  /* training layer tokens */
+  --t-accent:#0079c1; --t-ink:#1f2933; --t-mute:#5b6770; --t-border:#d9dde1; --t-ok:#1b7f3b; --t-bad:#b3261e;
+}
+*{box-sizing:border-box}
+html{font-size:clamp(7px,0.78125vw,15px)}
+body{margin:0;font-family:"Open Sans",Segoe UI,Arial,sans-serif;color:var(--a-text);overflow:hidden;background:#fff}
+button{font:inherit;cursor:pointer}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;font-size:1.1rem}
+.hdr{height:6.65rem;display:flex;align-items:center;padding:0 2.7rem 0 3rem;background:#fff;flex:none;font-family:Arial,Helvetica,sans-serif}
+.brand{font-weight:700;color:var(--a-blue);font-size:1.4rem;margin-right:2rem;white-space:nowrap}
+.brand{display:flex;flex-direction:column;align-items:flex-start;margin-left:-.5rem}.brand img{height:4.75rem;display:block}.brand small{font-weight:400;font-size:.8rem;color:var(--a-mute);display:block;margin:-.5rem 0 0 .6rem}
+.nav{display:flex;height:100%;align-items:stretch}
+.nav button{background:none;border:0;border-top:.35rem solid transparent;color:var(--a-blue);font-size:1.25rem;padding:0 1.45rem;display:flex;align-items:center;gap:.5rem}
+.nav button.on{border-top-color:var(--a-red)}
+.chev{display:inline-block;width:.6rem;height:.6rem;border-right:.2rem solid currentColor;border-bottom:.2rem solid currentColor;transform:rotate(45deg) translateY(-.15rem)}
+.hdr .sp{flex:1}
+.hdr .who{background:none;border:0;color:var(--a-blue);font-size:1.25rem;display:flex;align-items:center;gap:.6rem;font-family:inherit}
+.hdr svg{width:2.1rem;height:2.1rem;fill:var(--a-blue)}
+.strip{height:.75rem;background:#e3e3e3;flex:none}
+.mid{flex:1;display:flex;min-height:0;position:relative}
+.side{width:19.2rem;background:var(--a-grey);border-right:1px solid #e0e0e0;flex:none;position:relative}
+.side h1{font-size:1.75rem;font-weight:400;margin:2.3rem 1.4rem 2rem}
+.side .item{margin:0 .7rem;background:#fff;border-radius:2rem;padding:.9rem 1.6rem;color:var(--a-blue);font-size:1.4rem;display:flex;gap:1.6rem;align-items:center;border:0;width:calc(100% - 1.4rem);text-align:left}
+.side .item svg{width:1.5rem;height:1.5rem;fill:var(--a-blue)}
+.side .col{position:absolute;right:1.4rem;bottom:1rem;background:none;border:0;font-size:2rem;color:#333}
+.main{flex:1;position:relative;min-width:0}
+.tools{display:flex;gap:1.35rem;padding:1.4rem 1.35rem 0 1.35rem;align-items:stretch}
+.sum{flex:1;max-width:52.6rem;height:3.2rem;border:1px solid var(--a-line);border-radius:.2rem;background:#fff;display:flex;align-items:center;padding:0 .9rem;gap:1rem;text-align:left}
+.sum svg{width:1.3rem;height:1.3rem;stroke:var(--a-blue);fill:none;stroke-width:2.6}
+.sum .tx{flex:1;line-height:1.25}
+.sum .tx small{display:block;font-size:.9rem;color:var(--a-mute)}
+.sum .chev{color:var(--a-blue);width:.8rem;height:.8rem;border-width:.12rem}
+.tbtn{height:3.2rem;border:1px solid var(--a-line);border-radius:.2rem;background:#fff;padding:0 1.1rem;font-size:1.3rem;white-space:nowrap}
+.tbtn.dim{color:#777;margin-left:1.3rem}
+.empty{position:absolute;left:0;right:0;top:26.5rem;text-align:center}
+.empty svg{width:5.8rem;height:5.8rem}
+.empty h2{font-size:2.2rem;font-weight:600;margin:1.6rem 0 .8rem}
+.empty p{font-size:1.25rem;color:#444;margin:0}
+.veil{position:absolute;inset:0;background:rgba(255,255,255,.72);display:none}
+.foot{height:3.3rem;background:#e4e5e7;flex:none;display:flex;align-items:center;justify-content:center;gap:1rem;font-family:Arial,sans-serif;font-size:1.05rem;color:#555}
+.foot button{background:none;border:0;color:#555;font-size:1.05rem;padding:0}
+/* create panel */
+.panel{position:absolute;top:0;right:0;bottom:0;width:50%;background:#fff;box-shadow:-.3rem 0 .8rem rgba(0,0,0,.12);display:flex;flex-direction:column}
+.panel .ph{height:4.6rem;border-bottom:.16rem solid var(--a-navy);display:flex;align-items:center;justify-content:center;position:relative;flex:none}
+.panel .ph h2{font-size:1.65rem;font-weight:400;margin:0}
+.xbtn{position:absolute;left:.75rem;top:.7rem;width:3.4rem;height:3.1rem;border:1px solid var(--a-line);border-radius:.2rem;background:#fff;font-size:1.5rem}
+.pb{flex:1;overflow-y:auto;padding:0 3.5rem 0 2.1rem}
+.sec{padding:2.9rem 0 2.6rem;border-bottom:1px solid #ececec;margin-right:-3.5rem;padding-right:3.5rem}
+.sec:last-child{border-bottom:0}
+.sec h3{font-size:1.45rem;font-weight:600;margin:0 0 .7rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem .9rem;align-items:start}
+.fld{position:relative;height:3.2rem;border:1px solid var(--a-line);border-radius:.2rem;background:#fff}
+.fld input{position:absolute;inset:0;width:100%;border:0;background:none;font:inherit;font-size:1.1rem;padding:1.3rem .75rem .1rem;outline-offset:1px;color:#111}
+.fld label{position:absolute;left:.75rem;top:.95rem;font-size:1.1rem;color:#444;pointer-events:none;transition:all .12s}
+.fld input:focus+label,.fld input:not(:placeholder-shown)+label{top:.3rem;font-size:.9rem}
+.req{color:var(--a-red);margin-left:.3rem}
+.fld.err,.ms.err{border-color:var(--a-red)}
+.errmsg{color:var(--a-red);font-size:.9rem;margin-top:.2rem}
+.split{display:flex}.split .cc{width:35%;border-right:0;border-radius:.2rem 0 0 .2rem;display:flex;align-items:center;justify-content:space-between;padding:0 .75rem;color:#444}
+.split .fld:last-child{flex:1;border-radius:0 .2rem .2rem 0}
+.fld .cal{position:absolute;right:0;top:0;bottom:0;width:3.3rem;border:0;border-left:1px solid var(--a-line);background:#fff;font-size:1.2rem}
+.bchev{color:var(--a-blue);width:.8rem;height:.8rem;border-width:.12rem}
+/* select controls */
+.ms{position:relative;min-height:3.2rem;border:1px solid var(--a-line);border-radius:.2rem;background:#fff}
+.ms .ctl{width:100%;min-height:3.1rem;background:none;border:0;text-align:left;padding:.3rem 3rem .3rem .75rem;display:block;position:relative;font-size:1.1rem;color:#444}
+.ms .ctl .lb{display:block;padding-top:.6rem}
+.ms.has .ctl .lb{font-size:.9rem;padding-top:0}
+.ms .ctl .chev{position:absolute;right:1.1rem;top:1.05rem}
+.ms .vals{display:flex;flex-wrap:wrap;gap:.3rem;padding:0 3rem .45rem .75rem;margin-top:-.2rem}
+.ms .plain{padding:0 3rem .35rem .75rem;margin-top:-.25rem;font-size:1.1rem;color:#111}
+.chip{border:1px solid #777;border-radius:.25rem;padding:0 .2rem 0 .5rem;font-family:Arial,sans-serif;font-size:1.15rem;display:inline-flex;align-items:center;gap:.2rem;background:#fff;color:#111}
+.chip button{background:none;border:0;font-size:1.1rem;padding:0 .25rem;line-height:1.3;color:#111}
+.ms .list{position:absolute;left:-1px;right:-1px;top:calc(100% + .55rem);background:#fff;border:1px solid var(--a-line);z-index:5;box-shadow:0 .2rem .5rem rgba(0,0,0,.12)}
+.ms .opt{display:flex;align-items:center;width:100%;background:#fff;border:0;border-bottom:1px solid #eee;text-align:left;padding:.75rem .7rem .75rem 2.7rem;font-size:1.1rem;position:relative;color:#222}
+.ms .opt.sel{background:#636363;color:#fff}
+.ms .opt.sel:before{content:"\2714";position:absolute;left:.8rem}
+.ms .opt:hover:not(.sel){background:#f0f0f0}
+.tog{display:flex;align-items:center;gap:.7rem;font-size:1.25rem}
+.sw{width:3.5rem;height:1.7rem;border:1px solid #999;border-radius:.2rem;background:#eee;position:relative;padding:0}
+.sw:after{content:"";position:absolute;top:0;left:0;width:1.75rem;height:100%;background:#fff;border-right:1px solid #999;border-radius:.15rem}
+.sw.on{background:var(--a-green);border-color:var(--a-green)}
+.sw.on:after{left:auto;right:0;border-right:0}
+.sw.on:before{content:"\2714";position:absolute;left:.35rem;top:-.05rem;color:#fff;font-size:1.05rem}
+.cell{display:flex;gap:.6rem;align-items:flex-start;min-height:3.2rem}
+.cell .info{flex:1;min-width:0}
+.cell .info small{display:block;font-size:.92rem;color:#333;padding-top:.5rem}
+.cell .info div{font-family:Arial,sans-serif;font-size:1.1rem;padding-top:.75rem}
+.gb{height:3.1rem;padding:0 1.1rem;background:#f3f3f3;border:1px solid #ececec;border-radius:.2rem;color:var(--a-blue);font-size:1.25rem}
+.pf{height:4.4rem;background:#fafafa;border-top:1px solid #e6e6e6;flex:none;display:flex;align-items:center;padding:0 1.4rem}
+.pri{background:var(--a-btn);color:#fff;border:0;border-radius:.2rem;height:3.1rem;padding:0 1.15rem;font-size:1.25rem}
+/* sub panels */
+.sub{position:absolute;top:0;right:0;bottom:0;width:31.4%;background:#fff;box-shadow:-.3rem 0 .9rem rgba(0,0,0,.18);z-index:8;display:flex;flex-direction:column}
+.sub .sh{background:#f7f7f7;padding:1.9rem 1.9rem 3.2rem;position:relative;flex:none}
+.sub .sh h2{font-size:1.55rem;font-weight:400;margin:0}
+.sub .sx{position:absolute;right:1.5rem;top:1.3rem;background:none;border:0;color:var(--a-blue);font-size:1.6rem}
+.sub .sb{flex:1;overflow-y:auto}
+.msum{margin:1.8rem 1.9rem 0;max-width:none}
+.mform{margin:0 1.9rem;border:1px solid #ccc;border-top:0;padding:1.2rem 1.3rem 0}
+.mform .rowf{display:flex;gap:1rem}.mform .rowf b{font-weight:400;font-size:1.3rem;width:9.5rem;padding-top:.5rem}
+.mform .stack{flex:1;display:grid;gap:.65rem}
+.mform .act{display:flex;justify-content:space-between;align-items:center;background:#fafafa;margin:1.2rem -1.3rem 0;padding:.7rem 1.3rem}
+.mrow{display:flex;align-items:center;gap:1.6rem;width:100%;background:#fff;border:0;border-bottom:1px solid #e3e3e3;padding:1.25rem 1.2rem;text-align:left}
+.mrow:hover,.crow:hover{background:#f2f7fb}
+.av{width:3.1rem;height:3.1rem;border-radius:50%;background:#e8eef4;color:var(--a-navy);display:flex;align-items:center;justify-content:center;font-family:Arial;font-weight:700;font-size:1rem;letter-spacing:.1rem;flex:none}
+.mrow strong{display:block;font-weight:600;font-size:1.15rem}.mrow small{color:#666;font-size:.95rem}
+.cform{background:#f7f7f7;padding:0 1.2rem 1.3rem}#codePanel .sh{padding-bottom:1.6rem}
+.cform h3{font-size:1.35rem;font-weight:600;margin:0 0 .7rem}
+.cform .fld{margin-bottom:.65rem}
+.cform .vl{display:flex;justify-content:space-between;align-items:center;font-family:Arial;font-size:1.05rem;color:#444;margin:.9rem 0 .8rem}
+.crow{display:block;width:100%;background:#fff;border:0;border-bottom:1px solid #e3e3e3;padding:1.2rem;text-align:left;font-family:Arial;font-size:.98rem;color:#222}
+.crow span{display:block}
+/* authorization dialog */
+.shade{position:absolute;inset:0;background:rgba(0,0,0,.25);z-index:12;display:flex;align-items:center;justify-content:center}
+.dlg{width:42.7rem;background:#fff;box-shadow:0 .3rem 1.2rem rgba(0,0,0,.3)}
+.dlg h2{font-size:1.55rem;font-weight:400;margin:0;padding:1.4rem 1.4rem 1.2rem;border-bottom:.16rem solid var(--a-navy)}
+.dlg .db{padding:1.4rem 1.4rem 1.2rem}
+.dlg .note{font-size:.95rem;color:#555;margin:.6rem 0 0}
+.dlg .df{background:#fafafa;border-top:1px solid #e6e6e6;padding:1.3rem 1.4rem;display:flex;gap:.8rem}
+.toast{position:absolute;right:1.2rem;bottom:1rem;background:#fff;border:1px solid #ddd;border-bottom:.16rem solid var(--a-navy);box-shadow:0 .2rem .8rem rgba(0,0,0,.18);display:flex;align-items:center;font-family:Arial;font-size:1.2rem;z-index:9}
+.toast .ck{color:var(--a-green);padding:1rem 1.4rem;border-right:1px solid #eee}
+.toast span{padding:0 3rem 0 1.4rem}
+.toast button{background:#fafafa;border:0;color:var(--a-blue);font-size:1.3rem;padding:.7rem 1rem;margin-right:.6rem}
+[hidden]{display:none!important}
+:focus-visible{outline:2px dashed #333;outline-offset:2px}
+
+/* ---------- Training layer (fixed px sizes, own tokens) ---------- */
+.t{font-family:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:17px;line-height:1.5;color:var(--t-ink)}
+.t button{font-size:16px;font-family:inherit}
+.card{background:#fff;border:1px solid var(--t-border);border-radius:10px;box-shadow:0 6px 24px rgba(15,30,45,.14)}
+.overlay{position:fixed;inset:0;background:rgba(244,246,248,.96);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+.overlay .card{max-width:700px;width:100%;padding:28px 32px;border-left:5px solid var(--t-accent)}
+.overlay h1{font-size:28px;margin:0 0 8px}.overlay h2{font-size:20px;margin:18px 0 6px}
+.overlay p{margin:0 0 12px;color:var(--t-mute)}
+.stages{margin:14px 0 20px;padding:0;list-style:none}
+.stages li{padding:8px 0;border-top:1px solid #eef0f2;display:flex;gap:12px}
+.stages b{min-width:150px}
+.btnp{background:var(--t-accent);color:#fff;border:0;border-radius:6px;padding:10px 18px;font-weight:600}
+.btnp:disabled{opacity:.45;cursor:default}
+.btns{background:#fff;color:var(--t-ink);border:1px solid var(--t-border);border-radius:6px;padding:9px 16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#ring{position:fixed;border:3px solid var(--t-accent);border-radius:6px;box-shadow:0 0 0 4px rgba(0,121,193,.3),0 0 18px 4px rgba(0,121,193,.5),0 0 0 200vmax rgba(15,30,45,.2);pointer-events:none;z-index:40;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(0,121,193,.15),0 0 28px 9px rgba(0,121,193,.4),0 0 0 200vmax rgba(15,30,45,.2)}}
+#callout{position:fixed;width:380px;padding:0 20px 16px;border:2px solid var(--t-accent);box-shadow:0 10px 34px rgba(15,30,45,.3);z-index:41;overflow:hidden}
+#callout .prog{height:6px;background:#e3edf4;margin:0 -20px 14px}#callout .prog i{display:block;height:100%;background:var(--t-accent)}
+#callout .hd{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+#callout .num{flex:none;width:42px;height:42px;border-radius:50%;background:var(--t-accent);color:#fff;font-weight:700;font-size:20px;display:flex;align-items:center;justify-content:center}
+#callout .n{font-size:13.5px;color:var(--t-mute)}
+#callout h3{font-size:21px;line-height:1.25;margin:0}
+#callout p{margin:0 0 4px;font-size:18px}
+#callout .fb{font-weight:700;margin:0;font-size:19px}
+#gtk{position:fixed;width:440px;padding:18px 20px;border-left:5px solid var(--t-accent);background:#f6fafd;z-index:42;opacity:0;transform:translateY(14px)}
+#gtk.in{opacity:1;transform:none;transition:opacity .3s ease,transform .3s ease}
+#gtk .tl{font-weight:700;font-size:16px;color:var(--t-accent);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+#gtk .tl i{font-style:normal;display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--t-accent);color:#fff;font-size:14px;align-items:center;justify-content:center}
+#gtk p{margin:0 0 10px;font-size:16.5px}
+#gtk .row{margin-top:4px}
+.ok{color:var(--t-ok)}.bad{color:var(--t-bad)}
+#fab{position:fixed;left:16px;bottom:16px;width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid var(--t-border);box-shadow:0 4px 14px rgba(15,30,45,.22);z-index:80;font-size:20px;color:var(--t-accent)}
+#menu{position:fixed;left:16px;bottom:72px;width:300px;padding:16px;z-index:81;border-left:4px solid var(--t-accent)}
+#menu h3{margin:0 0 2px;font-size:17px}#menu p{margin:0 0 10px;color:var(--t-mute);font-size:15px}
+#menu button{display:block;width:100%;text-align:left;margin-top:6px}
+#task{position:fixed;left:16px;bottom:72px;width:350px;z-index:45;border-left:4px solid var(--t-accent);max-height:calc(100vh - 100px);overflow:auto}
+#task .hd{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;width:100%;background:none;border:0;font-weight:600;text-align:left}
+#task .bd{padding:0 14px 14px;font-size:15px}
+#task ol{margin:6px 0 12px;padding-left:18px}#task li{margin-bottom:5px}
+#note{position:fixed;top:14px;left:50%;transform:translateX(-50%);padding:9px 16px;z-index:70;font-size:16px}
+.q label{display:flex;gap:10px;padding:10px 12px;border:1px solid var(--t-border);border-radius:8px;margin:8px 0;cursor:pointer}
+.q input{margin-top:3px}
+.res li{padding:9px 0;border-top:1px solid #eef0f2;list-style:none}
+.res ul{padding:0;margin:0 0 6px}
+.tag{display:inline-block;font-size:14px;font-weight:600;border-radius:4px;padding:1px 7px;margin-right:8px;border:1px solid currentColor}
+.res small{display:block;color:var(--t-mute);margin-top:3px}
+.pct{font-size:40px;font-weight:700;margin:4px 0 0}
+@media (prefers-reduced-motion:reduce){#gtk.in{transition:none}#ring{animation:none}.fld label{transition:none}}
+</style>
+</head>
+<body>
+<!-- ================= Mock application ================= -->
+<div id="app">
+  <div class="hdr">
+    <div class="brand"><img alt="BMO Spend Dynamics" src="data:image/png;base64,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"></div>
+    <div class="nav">
+      <button data-inert>Home</button><button data-inert>Cards</button><button class="on" data-inert>Employees</button>
+      <button data-inert>Administration <i class="chev"></i></button><button data-inert>Accounts</button><button data-inert>Expenses</button>
+      <button data-inert>Approvals</button><button data-inert>Reports <i class="chev"></i></button><button data-inert>Search</button>
+    </div>
+    <span class="sp"></span>
+    <button class="who" data-inert aria-label="Notifications"><svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 0-2 2v.6A6.5 6.5 0 0 0 5.5 11v5L3 19h18l-2.500-3v-5A6.5 6.5 0 0 0 14 4.600V4a2 2 0 0 0-2-2zm-2 18a2 2 0 0 0 4 0z"/></svg></button>
+    <button class="who" data-inert style="margin-left:1.6rem"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="5"/><path d="M2 22c1-6 5-8 10-8s9 2 10 8z"/></svg>Training Admin <i class="chev"></i></button>
+  </div>
+  <div class="strip"></div>
+  <div class="mid">
+    <div class="side">
+      <h1>Employees</h1>
+      <button class="item" data-inert><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4.500"/><path d="M1 21c.800-5 4-7 8-7s7.200 2 8 7z"/><circle cx="17" cy="8" r="3.200"/><path d="M17 12.500c3 0 5.300 1.600 6 5.500h-4.500"/></svg>Employees</button>
+      <button class="col" data-inert aria-label="Collapse menu">&laquo;</button>
+    </div>
+    <div class="main">
+      <div class="tools">
+        <button class="sum" data-inert><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="M15.500 15.500 22 22"/></svg><span class="tx"><small>Employee search summary</small>All employees</span><i class="chev"></i></button>
+        <button class="tbtn dim" data-inert>&#9638; Select columns</button>
+        <button class="tbtn" data-inert>Export or import employee details</button>
+        <button class="tbtn" id="btnCreate">+&nbsp; Create employee</button>
+      </div>
+      <div class="empty">
+        <svg viewBox="0 0 60 60" fill="none" stroke="#222" stroke-width="2.6"><path d="M38 3H6a3 3 0 0 0-3 3v48a3 3 0 0 0 3 3h32" stroke-dasharray="7 6"/><path d="M38 3h3v9" stroke-dasharray="7 6"/><circle cx="36" cy="32" r="14" fill="#fff"/><path d="M46 43l11 11" stroke-width="3.2"/></svg>
+        <h2>Search for an employee</h2><p>Enter keywords and search criteria.</p>
+      </div>
+      <div class="veil" id="veil"></div>
+    </div>
+
+    <!-- Create employee panel -->
+    <div class="panel" id="panel" hidden role="dialog" aria-label="Create employee">
+      <div class="ph"><button class="xbtn" id="btnX" aria-label="Close">&#10005;</button><h2>Create employee</h2></div>
+      <div class="pb" id="pb">
+        <div class="sec" style="padding-top:2.9rem">
+          <h3>Employee profile</h3>
+          <div class="grid">
+            <div><div class="fld" id="w_empId"><input id="f_empId" placeholder=" " autocomplete="off"><label for="f_empId">Employee ID<span class="req">*</span></label></div></div>
+            <div><div class="fld"><input id="f_username" placeholder=" " autocomplete="off"><label for="f_username">Username</label></div></div>
+            <div><div class="fld" id="w_first"><input id="f_first" placeholder=" " autocomplete="off"><label for="f_first">First name<span class="req">*</span></label></div></div>
+            <div><div class="fld" id="w_last"><input id="f_last" placeholder=" " autocomplete="off"><label for="f_last">Last name<span class="req">*</span></label></div></div>
+            <div><div class="fld"><input id="f_middle" placeholder=" " autocomplete="off"><label for="f_middle">Middle name</label></div></div>
+            <div><div class="fld"><input id="f_phone" placeholder=" " autocomplete="off"><label for="f_phone">Phone number</label></div></div>
+            <div class="split"><button class="fld cc" data-inert>Country code <i class="chev bchev"></i></button><div class="fld"><input id="f_mobile" placeholder=" " autocomplete="off"><label for="f_mobile">Mobile phone number</label></div></div>
+            <div><div class="fld"><input id="f_email" placeholder=" " autocomplete="off"><label for="f_email">Primary email address</label></div></div>
+            <div><div class="fld"><input id="f_email2" placeholder=" " autocomplete="off"><label for="f_email2">Secondary email address</label></div></div>
+            <div id="slot_unit"></div>
+            <div><button class="fld cc" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:0 .75rem;color:#444" data-inert>Country of residence <i class="chev bchev"></i></button></div>
+            <div><div class="fld"><input id="f_term" placeholder=" " autocomplete="off" readonly data-inert><label for="f_term">Employee termination date</label><button class="cal" data-inert aria-label="Choose date">&#128197;</button></div></div>
+          </div>
+        </div>
+        <div class="sec">
+          <h3>Accounts</h3>
+          <div class="tog"><span id="lblCash">Enable cash expenses</span><button class="sw" id="swCash" role="switch" aria-checked="false" aria-labelledby="lblCash"></button></div>
+        </div>
+        <div class="sec">
+          <h3>Groups and roles membership</h3>
+          <div class="grid" id="groups"></div>
+        </div>
+        <div class="sec">
+          <h3>Managers</h3>
+          <div class="grid" id="mgrs"></div>
+        </div>
+        <div class="sec">
+          <h3>Default codes</h3>
+          <div class="grid" id="codes"></div>
+        </div>
+      </div>
+      <div class="pf"><button class="pri" id="btnDo">Create</button></div>
+    </div>
+
+    <!-- Select manager -->
+    <div class="sub" id="mgrPanel" hidden role="dialog" aria-label="Select manager">
+      <div class="sh"><h2>Select manager</h2><button class="sx" id="mgrX" aria-label="Close">&#10005;</button></div>
+      <div class="sb">
+        <button class="sum msum" id="mgrSum" aria-expanded="true" style="width:calc(100% - 3.8rem)"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="M15.500 15.500 22 22"/></svg><span class="tx"><small>Employee search summary</small>All employees</span><i class="chev"></i></button>
+        <div class="mform" id="mgrForm">
+          <div class="rowf"><b>Employee</b>
+            <div class="stack">
+              <div class="fld"><input id="m_first" placeholder=" " autocomplete="off"><label for="m_first">First name</label></div>
+              <div class="fld"><input id="m_last" placeholder=" " autocomplete="off"><label for="m_last">Last name</label></div>
+              <div class="fld"><input id="m_email" placeholder=" " autocomplete="off"><label for="m_email">Primary email address</label></div>
+              <div class="fld"><input id="m_id" placeholder=" " autocomplete="off"><label for="m_id">Employee ID</label></div>
+              <div class="fld"><input id="m_user" placeholder=" " autocomplete="off"><label for="m_user">Username</label></div>
+              <button class="ms has" data-inert style="text-align:left;padding:.3rem .75rem;font-size:1.1rem;position:relative"><span style="font-size:.9rem;color:#444;display:block">Company unit</span>All company units<i class="chev bchev" style="position:absolute;right:1.1rem;top:1.05rem"></i></button>
+            </div>
+          </div>
+          <div class="act"><button class="pri" id="mgrSearch">Search</button><button class="gb" id="mgrReset" style="background:#fff">Reset</button></div>
+        </div>
+        <div id="mgrList" style="margin-top:1.6rem;border-top:1px solid #e3e3e3"></div>
+      </div>
+    </div>
+
+    <!-- Select code -->
+    <div class="sub" id="codePanel" hidden role="dialog" aria-label="Select code">
+      <div class="sh"><h2>Select code</h2><button class="sx" id="codeX" aria-label="Close">&#10005;</button></div>
+      <div class="sb">
+        <div class="cform">
+          <h3 id="codeTitle">Location</h3>
+          <div class="fld"><input id="c_val" placeholder=" " autocomplete="off"><label for="c_val">Code value</label></div>
+          <div class="fld"><input id="c_desc" placeholder=" " autocomplete="off"><label for="c_desc">Description</label></div>
+          <div class="vl"><span>Show valid codes only</span><button class="sw on" data-inert role="switch" aria-checked="true" aria-label="Show valid codes only"></button></div>
+          <button class="tbtn" id="codeSearch">Search</button>
+        </div>
+        <div id="codeList" style="border-top:1px solid #e3e3e3"></div>
+      </div>
+    </div>
+
+    <!-- Confirm authorization -->
+    <div class="shade" id="auth" hidden>
+      <div class="dlg" role="dialog" aria-label="Confirm authorization">
+        <h2>Confirm authorization</h2>
+        <div class="db">
+          <div class="fld"><input id="pw" placeholder=" " readonly autocomplete="off" aria-describedby="pwNote"><label for="pw">Password<span class="req">*</span></label></div>
+          <p class="note" id="pwNote">Selecting the field fills in a made-up training password. Do not type a real one.</p>
+        </div>
+        <div class="df"><button class="pri" id="authOk">Confirm</button><button class="gb" id="authNo">Cancel</button></div>
+      </div>
+    </div>
+    <div class="toast" id="toast" hidden role="status"><span class="ck">&#10004;</span><span>Employee record created.</span><button id="toastX" aria-label="Dismiss">&#10005;</button></div>
+  </div>
+  <div class="foot"><span>Training simulation. All data is fictional.</span><button data-inert>Privacy policy &#8599;</button><button data-inert>Legal notice &#8599;</button><button data-inert>Security &#8599;</button></div>
+</div>
+
+<!-- ================= Training layer ================= -->
+<div class="t">
+  <div id="ring" hidden></div>
+  <div id="callout" class="card" hidden aria-live="polite"></div>
+  <div id="gtk" class="card" hidden role="dialog" aria-label="Good to know" aria-live="polite"></div>
+  <button id="fab" aria-label="Simulation menu" aria-expanded="false">&#9776;</button>
+  <div id="menu" class="card" hidden></div>
+  <div id="task" class="card" hidden></div>
+  <div id="note" class="card" hidden role="status"></div>
+  <div id="ovl" class="overlay" hidden></div>
+</div>
+
+<script>
+/* ---------------- Data (all fictional) ---------------- */
+const OPTS={unit:['Head Office','Operations','Finance'],charge:['All Codes'],report:['Administrator','Cardholder','Manager','Auditor'],approvee:['Employees','Contractors'],rate:['All Employees'],rights:['Customer Administrator','Auditor']};
+const LBL={unit:'Company unit',charge:'Charge group',report:'Report group',approvee:'Approvee roles',rate:'Rate group',rights:'Rights group'};
+const PEOPLE=[['Alex Tremblay','100234'],['Bianca Osei','100871'],['Carlos Mendes','101455'],['Dana Kowalski','102090'],['Farah Idris','102618'],['Sam Whitfield','103377'],['Wei Zhang','104102']];
+const CODES={location:{title:'Location',items:[['Montreal','Montreal'],['Toronto','Location Desc']]},gl:{title:'GL',items:[['6100','Travel'],['6200','Office supplies']]},account:{title:'Account Code',items:[['1000','General'],['2000','Projects']]}};
+const P={empId:'987654321',first:'Priya',last:'Raman',unit:'Head Office',username:'praman',email:'priya.raman@example.com',manager:'Alex Tremblay',location:'Toronto'};
+const SC={empId:'20457',first:'Marcus',last:'Bell',unit:'Operations',username:'mbell',email:'marcus.bell@example.com',direct:'Bianca Osei',mgr2:'Sam Whitfield',location:'Montreal'};
+const FKEYS=['empId','username','first','last','middle','phone','mobile','email','email2'];
+
+/* ---------------- State ---------------- */
+let S, mode='welcome', idx=0, advancing=false, tipOpen=true, B={};
+function blank(){return {panel:false,f:Object.fromEntries(FKEYS.map(k=>[k,''])),unit:'',cash:false,g:{charge:[],report:[],approvee:[],rate:[],rights:[]},dd:null,
+  mgr:{direct:null,mgr2:null},codes:{location:null,gl:null,account:null},sub:null,subT:null,mgrResults:false,mgrFormOpen:true,codeFilter:null,
+  auth:false,pw:false,errors:[],created:false,record:null,toast:false};}
+function reset(m){S=blank();B={badCreate:0,closed:0};idx=0;advancing=false;pop=null;seen=new Set();$('gtk').hidden=true;mode=m;
+  FKEYS.forEach(k=>$('f_'+k).value='');['m_first','m_last','m_email','m_id','m_user','c_val','c_desc'].forEach(i=>$(i).value='');$('pw').value='';$('pb').scrollTop=0;}
+const $=id=>document.getElementById(id);
+const eq=(a,b)=>String(a).trim().toLowerCase()===String(b).trim().toLowerCase();
+const same=(a,b)=>a.length===b.length&&b.every(x=>a.includes(x));
+
+/* ---------------- Build persistent DOM once ---------------- */
+function mkSelect(key,multi,req){
+  const d=document.createElement('div');d.className='ms';d.id='ms_'+key;
+  d.innerHTML=`<button class="ctl" id="ctl_${key}" aria-expanded="false" aria-haspopup="listbox"><span class="lb">${LBL[key]}${req?'<span class="req">*</span>':''}</span><i class="chev bchev"></i></button><div class="${multi?'vals':'plain'}" id="vals_${key}" hidden></div><div class="list" id="list_${key}" role="listbox" hidden></div>`;
+  OPTS[key].forEach(o=>{const b=document.createElement('button');b.className='opt';b.setAttribute('role','option');b.textContent=o;b.dataset.v=o;
+    b.addEventListener('pointerdown',e=>{e.preventDefault();pick(key,o,multi);});
+    b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(key,o,multi);}});
+    d.querySelector('.list').appendChild(b);});
+  d.querySelector('.ctl').addEventListener('click',e=>{e.stopPropagation();S.dd=S.dd===key?null:key;after();});
+  return d;
+}
+function pick(key,o,multi){ if(multi){const a=S.g[key];const i=a.indexOf(o);i<0?a.push(o):a.splice(i,1);} else {S.unit=o;S.dd=null;} S.errors=S.errors.filter(e=>e!=='unit');after(); }
+function mkCell(id,label){const d=document.createElement('div');d.className='cell';d.innerHTML=`<div class="info"><small>${label}</small><div id="v_${id}"></div></div><button class="gb" id="rm_${id}" hidden>Remove</button><button class="gb" id="sel_${id}" aria-label="Select ${label}">Select</button>`;return d;}
+(function build(){
+  const w=document.createElement('div');w.appendChild(mkSelect('unit',false,true));$('slot_unit').replaceWith(w);w.id='slot_unit';
+  ['charge','report','approvee','rate','rights'].forEach(k=>{const c=document.createElement('div');c.appendChild(mkSelect(k,true));$('groups').appendChild(c);});
+  [['direct','Direct manager'],['mgr2','Manager 2']].forEach(([k,l])=>{$('mgrs').appendChild(mkCell(k,l));
+    $('sel_'+k).onclick=()=>{S.sub='manager';S.subT=k;S.mgrResults=false;S.mgrFormOpen=true;after();};
+    $('rm_'+k).onclick=()=>{S.mgr[k]=null;after();};});
+  [['location','Location'],['gl','GL'],['account','Account Code']].forEach(([k,l])=>{$('codes').appendChild(mkCell(k,l));
+    $('sel_'+k).onclick=()=>{S.sub='code';S.subT=k;S.codeFilter=null;$('c_val').value='';$('c_desc').value='';after();};
+    $('rm_'+k).onclick=()=>{S.codes[k]=null;after();};});
+  FKEYS.forEach(k=>$('f_'+k).addEventListener('input',e=>{S.f[k]=e.target.value;S.errors=S.errors.filter(x=>x!==k);after();}));
+})();
+
+/* ---------------- Mock actions ---------------- */
+$('btnCreate').onclick=()=>{ if(S.created&&mode==='practice')return; if(S.created){S=Object.assign(blank(),{created:true,record:S.record});} S.panel=true;S.toast=false;after(); };
+$('btnX').onclick=()=>{S.panel=false;S.sub=null;S.dd=null;B.closed++;after();};
+$('swCash').onclick=()=>{S.cash=!S.cash;after();};
+$('mgrX').onclick=$('codeX').onclick=()=>{S.sub=null;after();};
+$('mgrSum').onclick=()=>{S.mgrFormOpen=!S.mgrFormOpen;after();};
+$('mgrSearch').onclick=()=>{S.mgrResults=true;S.mgrFormOpen=false;after();};
+$('mgrReset').onclick=()=>{['m_first','m_last','m_email','m_id','m_user'].forEach(i=>$(i).value='');S.mgrResults=false;after();};
+$('codeSearch').onclick=()=>{S.codeFilter=[$('c_val').value.trim().toLowerCase(),$('c_desc').value.trim().toLowerCase()];after();};
+$('btnDo').onclick=()=>{
+  const miss=[];['empId','first','last'].forEach(k=>{if(!S.f[k].trim())miss.push(k);});if(!S.unit)miss.push('unit');
+  S.errors=miss; if(miss.length){B.badCreate++;S.dd=null;} else {S.auth=true;S.pw=false;$('pw').value='';S.dd=null;} after();
+  if(miss.length){const el=miss[0]==='unit'?$('ms_unit'):$('w_'+miss[0]);el.scrollIntoView({block:'center'});placeRing();placeCallout();}
+};
+function fillPw(){ if(!S.pw){S.pw=true;$('pw').value='••••••••••••';after();} }
+$('pw').addEventListener('focus',fillPw);$('pw').addEventListener('click',fillPw);
+$('pw').addEventListener('keydown',e=>{if(e.key.length===1)e.preventDefault();});
+$('authNo').onclick=()=>{S.auth=false;after();};
+$('authOk').onclick=()=>{ if(!S.pw){note('Select the Password field first. It fills in a made-up training password.');return;}
+  S.record=snap();S.created=true;S.auth=false;S.panel=false;S.sub=null;S.toast=true;after(); };
+$('toastX').onclick=()=>{S.toast=false;after();};
+document.querySelectorAll('[data-inert]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();note('That control is not part of this simulation.');}));
+document.addEventListener('click',e=>{ if(S&&S.dd&&!e.target.closest('.ms')){S.dd=null;after();} if(!$('menu').hidden&&!e.target.closest('#menu,#fab'))closeMenu(); });
+document.addEventListener('keydown',e=>{ if(e.key!=='Escape')return; if(!$('menu').hidden){closeMenu();return;} if(S.dd){S.dd=null;after();return;} if(S.auth){S.auth=false;after();return;} if(S.sub){S.sub=null;after();} });
+function snap(){return {f:{...S.f},unit:S.unit,cash:S.cash,g:JSON.parse(JSON.stringify(S.g)),mgr:{...S.mgr},codes:{...S.codes}};}
+
+/* ---------------- Render ---------------- */
+function render(){
+  $('panel').hidden=!S.panel;$('veil').style.display=S.panel?'block':'none';
+  ['empId','first','last'].forEach(k=>$('w_'+k).classList.toggle('err',S.errors.includes(k)));
+  $('swCash').classList.toggle('on',S.cash);$('swCash').setAttribute('aria-checked',S.cash);
+  Object.keys(LBL).forEach(k=>{
+    const multi=k!=='unit',vals=multi?S.g[k]:(S.unit?[S.unit]:[]),box=$('ms_'+k),v=$('vals_'+k);
+    box.classList.toggle('has',vals.length>0);box.classList.toggle('err',k==='unit'&&S.errors.includes('unit'));
+    v.hidden=!vals.length;
+    if(multi){v.innerHTML='';vals.forEach(o=>{const c=document.createElement('span');c.className='chip';c.textContent=o;const x=document.createElement('button');x.innerHTML='&#10005;';x.setAttribute('aria-label','Remove '+o);x.dataset.chip=k+'|'+o;x.onclick=e=>{e.stopPropagation();S.g[k]=S.g[k].filter(z=>z!==o);after();};c.appendChild(x);v.appendChild(c);});}
+    else v.textContent=S.unit;
+    const open=S.dd===k;$('list_'+k).hidden=!open;$('ctl_'+k).setAttribute('aria-expanded',open);
+    box.querySelectorAll('.opt').forEach(o=>{const s=vals.includes(o.dataset.v);o.classList.toggle('sel',s);o.setAttribute('aria-selected',s);});
+  });
+  ['direct','mgr2'].forEach(k=>{$('v_'+k).textContent=S.mgr[k]||'';$('rm_'+k).hidden=!S.mgr[k];});
+  ['location','gl','account'].forEach(k=>{$('v_'+k).textContent=S.codes[k]||'';$('rm_'+k).hidden=!S.codes[k];});
+  $('mgrPanel').hidden=S.sub!=='manager';$('codePanel').hidden=S.sub!=='code';
+  if(S.sub==='manager'){
+    $('mgrForm').hidden=!S.mgrFormOpen;$('mgrSum').setAttribute('aria-expanded',S.mgrFormOpen);
+    const L=$('mgrList');L.innerHTML='';
+    if(S.mgrResults){const fn=$('m_first').value.trim().toLowerCase(),ln=$('m_last').value.trim().toLowerCase(),id=$('m_id').value.trim();
+      PEOPLE.filter(([n,i])=>{const [a,b]=n.toLowerCase().split(' ');return a.includes(fn)&&b.includes(ln)&&i.includes(id);}).forEach(([n,i])=>{
+        const b=document.createElement('button');b.className='mrow';b.dataset.name=n;b.innerHTML=`<span class="av">${n.split(' ').map(x=>x[0]).join(' ')}</span><span><strong>${n}</strong><small>${i}</small></span>`;
+        b.onclick=()=>{S.mgr[S.subT]=n;S.sub=null;after();};L.appendChild(b);});
+      if(!L.children.length)L.innerHTML='<p style="padding:1.5rem 1.9rem;color:#555">No employees match. Select Reset and search again.</p>';}
+  }
+  if(S.sub==='code'){
+    const c=CODES[S.subT];$('codeTitle').textContent=c.title;const L=$('codeList');L.innerHTML='';
+    c.items.filter(([v,d])=>!S.codeFilter||(v.toLowerCase().includes(S.codeFilter[0])&&d.toLowerCase().includes(S.codeFilter[1]))).forEach(([v,d])=>{
+      const b=document.createElement('button');b.className='crow';b.dataset.code=v;b.innerHTML=`<span>${v}</span><span>${d}</span>`;b.onclick=()=>{S.codes[S.subT]=v;S.sub=null;after();};L.appendChild(b);});
+  }
+  $('auth').hidden=!S.auth;$('toast').hidden=!S.toast;
+  document.querySelectorAll('.errmsg').forEach(e=>e.remove());
+  S.errors.forEach(k=>{const host=k==='unit'?$('ms_unit'):$('w_'+k);const m=document.createElement('div');m.className='errmsg';m.textContent='This field is required.';host.after(m);});
+}
+function after(){ render(); if(mode==='practice')tutorCheck(); placeRing(); placeCallout(); }
+
+/* ---------------- Guided practice ---------------- */
+const chipX=(k,o)=>document.querySelector(`[data-chip="${k}|${o}"]`);
+const optEl=(k,o)=>document.querySelector(`#list_${k} [data-v="${o}"]`);
+function fieldStep(key,label,val,know,title){return {title:title||('Enter the '+label.charAt(0).toLowerCase()+label.slice(1)),how:`In the <b>${label}</b> field, enter <b>${val}</b>.`,know,
+  target:()=>[$('f_'+key).parentElement],check:()=>eq(S.f[key],val)||S.created,
+  nudge:()=>{const v=S.f[key].trim();return v&&!val.toLowerCase().startsWith(v.toLowerCase())?`That does not match. Clear the field and enter <b>${val}</b>.`:'';}};}
+function groupStep(key,want,know,extra){return {title:'Choose the '+LBL[key].toLowerCase(),how:`Under <b>${LBL[key]}</b>, select <b>${want}</b>.`+(extra||''),know,
+  target:()=>{const wrong=S.g[key].find(o=>o!==want);if(wrong)return [chipX(key,wrong)];return S.dd===key?[optEl(key,want)]:[$('ms_'+key)];},
+  check:()=>same(S.g[key],[want])||S.created,
+  nudge:()=>{const wrong=S.g[key].find(o=>o!==want);return wrong?`You selected <b>${wrong}</b>. Remove it with the &times; on its tag, then select <b>${want}</b>.`:'';}};}
+const STEPS=[
+  {title:'Start a new profile',how:'From the Employees screen, select <b>Create employee</b> at the top right.',know:'Add a new employee when a new recruit needs a corporate card or access to Spend Dynamics.',
+    target:()=>[$('btnCreate')],side:'below',check:()=>S.panel||S.created},
+  fieldStep('empId','Employee ID',P.empId,'Mandatory fields are marked with an asterisk: Employee ID, First name, Last name and Company unit.','Enter the employee ID'),
+  fieldStep('first','First name',P.first),
+  fieldStep('last','Last name',P.last),
+  {title:'Choose the company unit',how:'Open <b>Company unit</b> and select <b>'+P.unit+'</b>.',
+    target:()=>S.dd==='unit'?[optEl('unit',P.unit)]:[$('ms_unit')],check:()=>S.unit===P.unit||S.created,
+    nudge:()=>S.unit&&S.unit!==P.unit?`You selected <b>${S.unit}</b>. Open the list again and select <b>${P.unit}</b>.`:''},
+  fieldStep('username','Username',P.username,'The <b>Username</b> and <b>Primary email address</b> fields are helpful if you intend for the employee to log in. If they will <b>never log in</b>, or if they <b>do not require email notifications</b> to be sent to them, you can leave these fields <b>blank</b>.'),
+  fieldStep('email','Primary email address',P.email,'Populating the <b>username</b> and <b>email address</b> allows the system to automatically send the employee a welcome email at the end of this process. The <b>secondary email</b> address is not commonly used.','Enter the primary email'),
+  {title:'Enable cash expenses',how:'Under Accounts, turn on <b>Enable cash expenses</b>.',
+    know:['If <b>cash expenses</b> are configured for your organization, enabling them allows the employee to submit <b>out-of-pocket expenses</b> such as mileage and per diems, even if they do not have a card.','Customers <b>not</b> using expense management will not see charge groups, approvee roles, or rate groups. They will also <b>not</b> see the Accounts toggle to enable cash expenses. <b>Reports</b> and <b>rights</b> are assigned in the same way in both experiences.'],
+    target:()=>[$('swCash')],check:()=>S.cash||S.created},
+  groupStep('charge','All Codes','<b>Charge groups</b> control which general ledger, or chart of account, values an employee can use when coding their transactions. An employee can be assigned one or multiple charge groups. The groups are defined during <b>implementation</b>, but administrators can create new ones and maintain them over time.'),
+  groupStep('report','Cardholder',['The <b>report group</b> bundles the reports available to this employee, with classes including Administrator, Cardholder, Manager, and Auditor. Select the class based on this <b>employee’s task</b> within your organization.','<b>Cardholders</b> and <b>administrators</b> have access to different reports. Cardholders are limited to activity on their own accounts or on accounts delegated to them, while administrators have full access.']),
+  groupStep('approvee','Employees','<b>Approvee</b> roles drive workflow. They move transactions from the cardholder to one or more approvers within the system, supporting the expense management feature set.'),
+  groupStep('rate','All Employees','Rate groups are used any time the platform performs a <b>calculation</b>, such as mileage claims, per diems or hours worked. Amounts are typically <b>reimbursed</b> to the claimant downstream through payroll or accounts payable.'),
+  groupStep('rights','Customer Administrator','<b>Rights</b> control who can take actions in the portal or access broad classes of information (ex. maintaining card accounts, requesting new cards or running data analysis extracts). Generally, rights are assigned to <b>administrators only</b>.'),
+  {title:'Assign a direct manager',how:'Under Managers, choose <b>Select</b> next to <b>Direct manager</b>.',know:'Spend Dynamics supports up to <b>six manager levels</b>: a direct manager and Manager 2 through Manager 6. Additional levels beyond the first 2 managers can be assigned <b>after</b> creating the user’s profile.',
+    target:()=>{ if(S.mgr.direct&&S.mgr.direct!==P.manager)return [$('rm_direct')]; if(S.sub==='manager'&&S.subT!=='direct')return [$('mgrX')]; return [$('sel_direct')];},
+    check:()=>(S.sub==='manager'&&S.subT==='direct')||S.mgr.direct===P.manager||S.created,
+    nudge:()=>S.mgr.direct&&S.mgr.direct!==P.manager?`You assigned <b>${S.mgr.direct}</b>. Select <b>Remove</b>, then choose Select again.`:(S.sub==='manager'&&S.subT!=='direct'?'That is the Manager 2 search. Close it and choose Select next to <b>Direct manager</b>.':'')},
+  {title:'Search for the manager',how:'In the Select manager panel, select <b>Search</b>.',know:'You can narrow the search by name, email address, employee ID or username before you select Search.',
+    target:()=>S.mgrFormOpen?[$('mgrSearch')]:[$('mgrSum')],side:'left',check:()=>(S.sub==='manager'&&S.mgrResults)||S.mgr.direct===P.manager||S.created,
+    nudge:()=>S.mgrFormOpen?'':'The search form is collapsed. Select <b>Employee search summary</b> to open it.'},
+  {title:'Select the manager',how:'From the results, select <b>'+P.manager+'</b>.',know:'<b>Managers</b> commonly mirror your organization’s existing <b>HR reporting structure</b>. In <b>expense management</b> they often determine the transaction approval workflow, with the direct manager as the first approver. Implementations can differ. Therefore, the manager assigned here <b>does not</b> have to be the employee’s actual manager.',
+    target:()=>{const r=document.querySelector(`#mgrList [data-name="${P.manager}"]`);return r?[r]:[$('mgrReset')];},side:'left',check:()=>S.mgr.direct===P.manager||S.created,
+    nudge:()=>S.sub==='manager'&&S.mgrResults&&!document.querySelector(`#mgrList [data-name="${P.manager}"]`)?'Your search has no match for that name. Select <b>Reset</b>, then Search again.':''},
+  {title:'Set a default location',how:'Under Default codes, choose <b>Select</b> next to <b>Location</b>.',know:'<b>Default codes</b> pre-populate accounting information as transactions load into the system, pre-categorizing part or all of each expense and reducing the reconciliation effort required later.',
+    target:()=>{ if(S.codes.location&&S.codes.location!==P.location)return [$('rm_location')]; if(S.sub==='code'&&S.subT!=='location')return [$('codeX')]; return [$('sel_location')];},
+    check:()=>(S.sub==='code'&&S.subT==='location')||S.codes.location===P.location||S.created,
+    nudge:()=>S.codes.location&&S.codes.location!==P.location?`You chose <b>${S.codes.location}</b>. Select <b>Remove</b>, then choose Select again.`:(S.sub==='code'&&S.subT!=='location'?'That is a different code. Close it and choose Select next to <b>Location</b>.':'')},
+  {title:'Choose the location code',how:'In the Select code panel, select <b>'+P.location+'</b>.',
+    target:()=>{const r=document.querySelector(`#codeList [data-code="${P.location}"]`);return r?[r]:[$('codeSearch')];},side:'left',check:()=>S.codes.location===P.location||S.created,
+    nudge:()=>S.sub==='code'&&!document.querySelector(`#codeList [data-code="${P.location}"]`)?'Your filter hides that code. Clear the fields and select <b>Search</b>.':''},
+  {title:'Create the profile',how:'When you have finished, select <b>Create</b>.',target:()=>[$('btnDo')],side:'right',check:()=>S.auth||S.created,
+    nudge:()=>S.errors.length?'A mandatory field is empty. Complete the fields marked in red, then select <b>Create</b>.':''},
+  {title:'Confirm authorization',how:'Select the <b>Password</b> field to fill in the training password.',know:'This training example asks for a password. In production you will be prompted to complete two-step verification instead.',
+    target:()=>[$('pw').parentElement],side:'right',check:()=>S.pw||S.created},
+  {title:'Finish',how:'Select <b>Confirm</b>.',know:'Because we populated the <b>username</b> and email address, the system automatically sends a set of welcome emails, including the username and a temporary password. The employee can then log in, choose their own password, and set up their own two-step verification.',
+    target:()=>[$('authOk')],side:'right',check:()=>S.created}
+];
+function guard(){ // recoverable detours that apply to any step
+  const st=STEPS[idx]; if(!st||idx===0||S.created)return null;
+  if(!S.panel)return {t:[$('btnCreate')],m:'The Create employee panel is closed. Select <b>Create employee</b> to reopen it. Your entries are kept in this simulation.',side:'below'};
+  if(S.auth&&idx<19)return {t:[$('authNo')],m:'There is more to complete first. Select <b>Cancel</b> to return to the form.',side:'right'};
+  if(S.sub==='manager'&&![13,14,15].includes(idx))return {t:[$('mgrX')],m:'Close the Select manager panel to continue.',side:'left'};
+  if(S.sub==='code'&&![16,17].includes(idx))return {t:[$('codeX')],m:'Close the Select code panel to continue.',side:'left'};
+  return null;
+}
+// "Good to know" notes: STEPS[i].before floats in before the step, STEPS[i].know after it is completed.
+(function arrange(){
+  const mv=i=>{STEPS[i].before=STEPS[i].know;STEPS[i].know=null;}; [0,13,16,19].forEach(mv);
+  STEPS[1].before='The Create employee panel displays the Employee profile form. Mandatory fields are marked with an asterisk: Employee ID, First name, Last name and Company unit.';STEPS[1].know=null;
+  STEPS[8].before=STEPS[7].know[1];STEPS[7].know=STEPS[7].know[0];
+  STEPS[14].know=null;
+})();
+let pop=null, seen=new Set();
+const vis=e=>e&&e.getClientRects().length>0;
+function showPop(content,st,cb){
+  let els=[];try{els=st.target().filter(vis);}catch(e){}
+  pop={cb,els:els.length?els:null,side:st.side};
+  $('callout').hidden=true;
+  const g=$('gtk');g.hidden=false;g.classList.remove('in');
+  g.innerHTML=`<div class="tl"><i>i</i>Good to know</div>${[].concat(content).map(k=>`<p>${k}</p>`).join('')}<div class="row"><button class="btnp" id="gtkGo">Continue</button></div>`;
+  $('gtkGo').onclick=()=>{const f=pop.cb;pop=null;g.hidden=true;f();};
+  placeRing();placeCallout();void g.offsetWidth;g.classList.add('in');$('gtkGo').focus({preventScroll:true});
+}
+function nextStep(){ idx++; if(S.dd){S.dd=null;render();} if(idx>=STEPS.length){practiceDone();return;} enterStep(); }
+function enterStep(){
+  const st=STEPS[idx];
+  if(st.before&&!seen.has(idx)&&!st.check()){ seen.add(idx); focusStep(); showPop(st.before,st,showStep); }
+  else showStep();
+}
+function showStep(){ focusStep(); drawCallout(); tutorCheck(); placeRing(); placeCallout(); autoFocus(); }
+// Move the cursor to the control for the step that has just become active (never the password field: selecting it is the learner's action).
+function autoFocus(){ if(mode!=='practice'||pop||advancing||idx>=STEPS.length||guard())return;
+  let els=[];try{els=STEPS[idx].target().filter(vis);}catch(e){} const el=els[0]; if(!el)return;
+  const f=el.matches('input,button')?el:el.querySelector('input,button'); if(f&&f.id!=='pw')f.focus({preventScroll:true}); }
+function tutorCheck(){
+  if(advancing||pop||idx>=STEPS.length)return;
+  if(STEPS[idx].check()){ advancing=true; drawCallout(true); placeCallout();
+    setTimeout(()=>{ if(mode!=='practice')return; advancing=false; const st=STEPS[idx];
+      if(st.know) showPop(st.know,st,nextStep); else nextStep(); },900);
+  } else drawCallout();
+}
+function curTargets(){ if(mode!=='practice'||idx>=STEPS.length)return null; if(pop)return pop.els; if(advancing)return null;
+  const g=guard(); const els=(g?g.t:STEPS[idx].target()).filter(Boolean); return els.length?els:null; }
+function focusStep(){ let els=null;try{els=STEPS[idx].target().filter(Boolean);}catch(e){} if(els&&els[0]&&els[0].closest('#pb'))els[0].scrollIntoView({block:'center'}); }
+function drawCallout(correct){
+  const c=$('callout'); if(mode!=='practice'||idx>=STEPS.length||pop){c.hidden=true;return;}
+  const st=STEPS[idx],g=guard(),n=(!g&&st.nudge)?st.nudge():'',msg=g?g.m:n; c.hidden=false;
+  const head=`<div class="prog"><i style="width:${Math.round(idx/STEPS.length*100)}%"></i></div><div class="hd"><span class="num">${idx+1}</span><div><div class="n">Step ${idx+1} of ${STEPS.length}</div><h3>${st.title}</h3></div></div>`;
+  if(correct){c.innerHTML=head+`<p class="fb ok">&#10004; Correct.</p>`;return;}
+  c.innerHTML=head+(msg?`<p class="bad"><b>Not quite.</b> ${msg}</p>`:`<p class="how">${st.how}</p>`);
+}
+function placeRing(){ const r=$('ring'),els=curTargets(); if(!els){r.hidden=true;return;}
+  const b=els[0].getBoundingClientRect(); r.hidden=false; r.style.left=b.left-5+'px';r.style.top=b.top-5+'px';r.style.width=b.width+10+'px';r.style.height=b.height+10+'px'; }
+function placeCallout(){
+  const c=pop?$('gtk'):$('callout'); if(c.hidden)return; const els=curTargets(); const W=innerWidth,H=innerHeight,cw=c.offsetWidth,ch=c.offsetHeight,gap=18;
+  if(!els){c.style.left=(W-cw)/2+'px';c.style.top=Math.max(8,(H-ch)/2)+'px';return;}
+  const b=els[0].getBoundingClientRect(); const g=pop?null:guard(); let side=pop?pop.side:((g&&g.side)||STEPS[idx].side);
+  let x,y;
+  if(!side){ // inside the create panel: sit just left of the panel, level with the control
+    const p=$('panel').getBoundingClientRect(); x=p.left-cw-gap; y=b.top+b.height/2-ch/2; }
+  else if(side==='left'){ const host=els[0].closest('.sub'); const hl=host?host.getBoundingClientRect().left:b.left; x=hl-cw-gap; y=b.top+b.height/2-ch/2; }
+  else if(side==='right'){ x=b.right+gap; y=b.top+b.height/2-ch/2; if(x+cw>W-8){x=b.left-cw-gap;} }
+  else { x=b.left+b.width/2-cw/2; y=b.bottom+gap; if(y+ch>H-8)y=b.top-ch-gap; }
+  x=Math.max(8,Math.min(W-cw-8,x)); y=Math.max(8,Math.min(H-ch-8,y));
+  c.style.left=x+'px';c.style.top=y+'px';
+}
+$('pb').addEventListener('scroll',()=>{placeRing();placeCallout();});
+addEventListener('resize',()=>{placeRing();placeCallout();});
+function practiceDone(){ $('callout').hidden=true;$('gtk').hidden=true;$('ring').hidden=true; mode='practiceDone';
+  overlay(`<h1>Practice complete</h1><p>You created an employee profile from start to finish. Next, try it without guidance.</p><div class="row"><button class="btnp" id="goSc">Start the scenario</button><button class="btns" id="again">Repeat the practice</button></div>`);
+  $('goSc').onclick=startScenario;$('again').onclick=startPractice; }
+
+/* ---------------- Scenario ---------------- */
+let taskOpen=true;
+function drawTask(){ const t=$('task'); t.hidden=mode!=='scenario'; if(t.hidden)return;
+  t.innerHTML=`<button class="hd" id="taskHd" aria-expanded="${taskOpen}"><span>Your task</span><span>${taskOpen?'&#9662;':'&#9652;'}</span></button>`+(taskOpen?`<div class="bd">
+  <p style="margin:0">Marcus Bell is joining the Operations company unit. Create his employee profile.</p>
+  <ol><li>Employee ID <b>${SC.empId}</b>. He will log in and needs email notifications: username <b>${SC.username}</b>, email <b>${SC.email}</b>.</li>
+  <li>He will not submit out-of-pocket expenses.</li>
+  <li>He is a cardholder, not an administrator. Assign the <b>All Codes</b> charge group, <b>Cardholder</b> report group, <b>Employees</b> approvee role and <b>All Employees</b> rate group.</li>
+  <li>Direct manager: <b>${SC.direct}</b>. Manager 2: <b>${SC.mgr2}</b>.</li>
+  <li>Default location: <b>${SC.location}</b>.</li>
+  <li>Create the profile and confirm authorization.</li></ol>
+  <button class="btnp" id="submit">Submit</button></div>`:'');
+  $('taskHd').onclick=()=>{taskOpen=!taskOpen;drawTask();}; const s=$('submit'); if(s)s.onclick=startQuiz; }
+const R=()=>S.record||snap();
+const CRIT=[
+  {text:'Entered the employee ID, first name and last name',ok:()=>{const r=R();return eq(r.f.empId,SC.empId)&&eq(r.f.first,SC.first)&&eq(r.f.last,SC.last);},why:()=>{const r=R();return `The record shows ID "${r.f.empId}", first name "${r.f.first}" and last name "${r.f.last}". It should be ${SC.empId}, ${SC.first} and ${SC.last}.`;}},
+  {text:'Set the company unit to Operations',ok:()=>R().unit===SC.unit,why:()=>`Company unit is ${R().unit?'"'+R().unit+'"':'empty'}. Marcus is joining Operations.`},
+  {text:'Entered the username and primary email address',ok:()=>{const r=R();return eq(r.f.username,SC.username)&&eq(r.f.email,SC.email);},why:()=>'He will log in and needs notifications, so both fields are needed. Populating them lets the system send the welcome emails.'},
+  {text:'Left cash expenses turned off',ok:()=>!R().cash,why:()=>'Enable cash expenses is on. It is only needed when the employee will submit out-of-pocket expenses such as mileage and per diems.'},
+  {text:'Assigned the charge group, report group, approvee role and rate group',ok:()=>{const g=R().g;return same(g.charge,['All Codes'])&&same(g.report,['Cardholder'])&&same(g.approvee,['Employees'])&&same(g.rate,['All Employees']);},
+    why:()=>{const g=R().g,s=a=>a.length?a.join(', '):'none';return `You assigned charge: ${s(g.charge)}; report: ${s(g.report)}; approvee: ${s(g.approvee)}; rate: ${s(g.rate)}. The task asked for All Codes, Cardholder, Employees and All Employees.`;}},
+  {text:'Left the rights group empty',ok:()=>R().g.rights.length===0,why:()=>`You assigned ${R().g.rights.join(', ')}. Generally, rights are assigned to administrators only, and Marcus is a cardholder.`},
+  {text:'Assigned Bianca Osei as direct manager',ok:()=>R().mgr.direct===SC.direct,why:()=>`Direct manager is ${R().mgr.direct||'empty'}. It should be ${SC.direct}.`},
+  {text:'Assigned Sam Whitfield as Manager 2',ok:()=>R().mgr.mgr2===SC.mgr2,why:()=>`Manager 2 is ${R().mgr.mgr2||'empty'}. It should be ${SC.mgr2}.`},
+  {text:'Set the default location to Montreal',ok:()=>R().codes.location===SC.location,why:()=>`Default location is ${R().codes.location||'empty'}. It should be ${SC.location}.`},
+  {text:'Created the record and confirmed authorization',ok:()=>S.created,why:()=>'The record was not created. Select Create, then confirm authorization, before you submit.'}
+];
+
+/* ---------------- Knowledge check ---------------- */
+const QUIZ=[
+  {q:'Which fields are mandatory when you create an employee?',a:['Employee ID, First name, Last name and Company unit','Employee ID, Username and Primary email address','First name, Last name and Direct manager','Every field in the Employee profile section'],c:0,why:'Mandatory fields are marked with an asterisk: Employee ID, First name, Last name and Company unit.'},
+  {q:'When can you leave the Username and Primary email address fields blank?',a:['When the employee does not have a card yet','When the employee will never log in or does not require email notifications','When the employee is an administrator','Never. Both are always required'],c:1,why:'If they will never log in, or do not require email notifications, you can leave these fields blank.'},
+  {q:'What does turning on Enable cash expenses allow?',a:['The employee can withdraw cash on their card','The employee can approve other employees’ expenses','The employee can submit out-of-pocket expenses such as mileage and per diems, even without a card','The employee receives a higher credit limit'],c:2,why:'Enabling cash expenses allows the employee to submit out-of-pocket expenses such as mileage and per diems, even if they do not have a card.'},
+  {q:'How many manager levels does Spend Dynamics support, and when can you assign levels beyond the first two?',a:['Two levels, both when you create the profile','Six levels, all when you create the profile','Six levels. Levels beyond the first two are assigned after the profile is created','Unlimited levels, assigned at any time'],c:2,why:'Spend Dynamics supports up to six manager levels. Levels beyond the first two can be assigned after creating the profile.'},
+  {q:'You populated the username and email address. What happens once the record is created?',a:['Nothing happens until an administrator activates the account','The system automatically sends welcome emails with the username and a temporary password','The employee is issued a card automatically','The employee’s direct manager must approve the profile'],c:1,why:'The system automatically sends a set of welcome emails, including the username and a temporary password.'}
+];
+let qi=0,ans=[];
+function startQuiz(){ mode='quiz';qi=0;ans=[];$('task').hidden=true;drawQ(); }
+function drawQ(){ const q=QUIZ[qi];
+  overlay(`<p style="margin:0">Knowledge check: question ${qi+1} of ${QUIZ.length}</p><h1 style="font-size:20px;margin:6px 0 10px" id="qh">${q.q}</h1><div class="q" role="radiogroup" aria-labelledby="qh">${q.a.map((a,i)=>`<label><input type="radio" name="q" value="${i}"><span>${a}</span></label>`).join('')}</div><div class="row" style="margin-top:14px"><button class="btnp" id="qNext" disabled>${qi<QUIZ.length-1?'Next':'See results'}</button></div>`);
+  document.querySelectorAll('input[name=q]').forEach(r=>r.onchange=()=>{$('qNext').disabled=false;});
+  $('qNext').onclick=()=>{ans[qi]=+document.querySelector('input[name=q]:checked').value;qi++; qi<QUIZ.length?drawQ():results();}; }
+function results(){ mode='results';
+  const cr=CRIT.map(c=>({t:c.text,ok:!!c.ok(),why:c.why()})), qs=QUIZ.map((q,i)=>({t:q.q,ok:ans[i]===q.c,why:`You chose "${q.a[ans[i]]}". ${q.why}`}));
+  const tot=cr.length+qs.length,got=cr.filter(x=>x.ok).length+qs.filter(x=>x.ok).length;
+  const li=(x,y,n)=>`<li><span class="tag ${x.ok?'ok':'bad'}">${x.ok?y:n}</span>${x.t}${x.ok?'':`<small>${x.why}</small>`}</li>`;
+  overlay(`<h1>Your results</h1><p class="pct">${Math.round(got/tot*100)}%</p><p>${got} of ${tot} items</p>
+  <h2>Scenario</h2><div class="res"><ul>${cr.map(x=>li(x,'Met','Not met')).join('')}</ul></div>
+  <h2>Knowledge check</h2><div class="res"><ul>${qs.map(x=>li(x,'Correct','Not yet')).join('')}</ul></div>
+  <div class="row" style="margin-top:16px"><button class="btnp" id="rs">Retry the scenario</button><button class="btns" id="rp">Back to guided practice</button></div>`);
+  $('rs').onclick=startScenario;$('rp').onclick=startPractice; }
+
+/* ---------------- Shell: welcome, menu, notes ---------------- */
+function overlay(html){ const o=$('ovl'); if(html===null){o.hidden=true;o.innerHTML='';return;} o.hidden=false;o.innerHTML=`<div class="card">${html}</div>`;o.scrollTop=0; const f=o.querySelector('button,input');if(f)f.focus(); }
+function welcome(){ reset('welcome');render();$('task').hidden=true;$('callout').hidden=true;$('ring').hidden=true;
+  overlay(`<h1>Create a profile for a new employee</h1><p>Practise adding a new employee in a working copy of the Create employee panel: profile details, groups and roles, managers and default codes.</p>
+  <ul class="stages"><li><b>1. Guided practice</b><span>Create a profile step by step, with each control highlighted.</span></li><li><b>2. Scenario</b><span>Create a different profile on your own. You are scored on the record you create.</span></li><li><b>3. Knowledge check</b><span>Five questions, then your itemised results.</span></li></ul>
+  <div class="row"><button class="btnp" id="go">Start</button><button class="btns" id="skip">Go straight to the scenario</button></div>`);
+  $('go').onclick=startPractice;$('skip').onclick=startScenario; }
+function startPractice(){ reset('practice');overlay(null);$('task').hidden=true;render();enterStep(); }
+function startScenario(){ reset('scenario');overlay(null);$('callout').hidden=true;$('ring').hidden=true;taskOpen=true;render();drawTask(); }
+function stageText(){ return {welcome:'Welcome',practice:`Guided practice: step ${Math.min(idx+1,STEPS.length)} of ${STEPS.length}`,practiceDone:'Guided practice complete',scenario:'Scenario',quiz:`Knowledge check: question ${qi+1} of ${QUIZ.length}`,results:'Results'}[mode]; }
+function openMenu(){ const m=$('menu');m.hidden=false;$('fab').setAttribute('aria-expanded','true');
+  m.innerHTML=`<h3>Create a profile for a new employee</h3><p>${stageText()}</p><button class="btns" id="mSkip">Skip to the scenario</button><button class="btns" id="mRe">Restart</button><button class="btns" id="mFs">Full screen</button><button class="btns" id="mAll">All tutorials</button>`;
+  $('mAll').onclick=()=>{location.href='index.html';};
+  $('mSkip').onclick=()=>{closeMenu();startScenario();};$('mRe').onclick=()=>{closeMenu();welcome();};
+  $('mFs').onclick=()=>{closeMenu();const d=document;try{(d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen()).catch(()=>note('Full screen is not available here.'));}catch(e){note('Full screen is not available here.');}}; }
+function closeMenu(){ $('menu').hidden=true;$('fab').setAttribute('aria-expanded','false'); }
+$('fab').onclick=e=>{e.stopPropagation();$('menu').hidden?openMenu():closeMenu();};
+let nt; function note(msg){ const n=$('note');n.textContent=msg;n.hidden=false;clearTimeout(nt);nt=setTimeout(()=>n.hidden=true,2600); }
+welcome();
+</script>
+</body>
+</html>

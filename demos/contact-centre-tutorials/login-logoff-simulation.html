@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logging In and Off Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* 9-8-8 brand layer (yellow, blue, green; Roboto headings, Lora body) wraps a neutral mock of the phone system.
+   Layout: full-viewport app; instructions float beside the control they describe. Single light theme by choice. */
+:root{
+  --yellow:#FDDA64; --blue:#B8D8EB; --green:#1d1d1b; --ink:#1d1d1b; --paper:#ffffff; --hair:#dcdcd6; --soft:#5a5a55; --blue-tint:#f0f6fa; --page:#f6f6f3; --good:#235B4E; --bad:#a3271d;
+  --app-bg:#ededf5; --app-surface:#ffffff; --app-line:#d6d6e3; --app-ink:#22222d; --app-muted:#676778;
+  --app-accent:#2a5fc4; --app-soft:#e6e9f8; --go:#2fa84f; --stop:#dc2626;
+  --head:"Roboto","Helvetica Neue",Arial,sans-serif; --body:"Lora",Georgia,"Times New Roman",serif;
+  --ui:system-ui,-apple-system,"Segoe UI",Arial,sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--app-bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;display:flex;flex-direction:column;min-height:560px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer} button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+[hidden]{display:none!important}
+svg.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+/* mock app, edge to edge */
+.sim{flex:1;min-height:0;display:flex}
+.app{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;background:var(--app-surface);color:var(--app-ink);font-family:var(--ui);font-size:15px}
+.appscroll{flex:1;overflow:auto;display:flex}
+.appinner{flex:1;min-width:900px;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--app-line)}
+.topbar .menu{border:1px solid var(--app-accent);color:var(--app-accent);background:var(--app-surface);border-radius:6px;padding:5px 12px;font-size:14px}
+.topbar .search{flex:0 1 340px;border:1px solid var(--app-line);border-radius:6px;padding:7px 12px;font-size:14px;color:var(--app-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .sp{flex:1}
+.ib{border:1px solid transparent;background:var(--app-soft);border-radius:8px;width:40px;height:40px;display:inline-grid;place-items:center;color:var(--app-ink);padding:0}
+.ib:hover:not(:disabled){border-color:var(--app-accent)}
+.ib.on{background:var(--app-accent);color:#fff}
+.ib:disabled{opacity:.45}
+.ib.end{background:var(--stop);color:#fff}
+.ib.dot{position:relative}
+.ib.dot::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--stop);border:2px solid var(--app-surface)}
+.onq{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:#1f3f8f;background:var(--app-soft);border-radius:8px;padding:9px 12px}
+.onq i{width:32px;height:17px;border-radius:99px;background:#1f3f8f;position:relative;display:block}
+.onq i::after{content:"";position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--app-line);display:grid;place-items:center;color:var(--app-muted)}
+.profile{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--app-bg)}
+.profile .big{width:120px;height:120px;border-radius:50%;background:var(--app-line);display:grid;place-items:center;color:var(--app-muted)}
+.profile .big svg{width:64px;height:64px}
+.profile b{font-size:26px;font-weight:400}
+.profile small{color:var(--app-muted);font-size:14px}
+.profile .st{color:var(--app-accent);font-weight:700;font-size:13px}
+.ws{flex:1;display:grid;grid-template-columns:270px minmax(0,1fr) auto;position:relative;min-height:0}
+.conv{border-right:1px solid var(--app-line);padding:14px;display:flex;flex-direction:column;gap:12px}
+.convhead{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15px}
+.convhead span{flex:1}
+.convhead .ib{width:34px;height:34px}
+.convhead svg.ic{width:17px;height:17px}
+.convempty{color:var(--app-muted);font-size:14px;text-align:center;margin-top:48px}
+.convcard{border:2px solid var(--app-accent);border-radius:8px;padding:10px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.convcard div{background:var(--app-soft);border-radius:6px;padding:8px 10px}
+.convcard small{display:block;color:var(--app-muted)}
+.main{background:var(--app-bg);min-width:0;display:flex;flex-direction:column}
+.waiting{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--app-muted);text-align:center;padding:24px}
+.waiting b{font-size:22px;font-weight:400;color:var(--app-ink)}
+.callhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 16px;background:var(--app-surface);border-bottom:1px solid var(--app-line)}
+.callhead .who{display:flex;align-items:center;gap:10px;margin-right:10px}
+.callhead .who b{display:block;font-size:15px;line-height:1.2}
+.callhead .who small{font-family:var(--mono);font-size:12.5px;color:var(--app-muted)}
+.callhead .grp{display:flex;gap:6px}
+.callhead .sp{flex:1}
+.badge{font-size:13px;font-weight:700;border-radius:99px;padding:3px 11px;background:var(--app-soft);color:#1f3f8f}
+.script{margin:18px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:18px;max-width:760px}
+.script h3{margin:0 0 10px;font-size:17px}
+.script dl{margin:0;display:grid;grid-template-columns:150px 1fr;gap:8px 12px;font-size:14.5px}
+.script dt{font-weight:700} .script dd{margin:0}
+.script .links{display:flex;flex-direction:column;gap:8px}
+.script .links button{border:1px solid var(--app-line);background:var(--app-bg);border-radius:6px;padding:8px 10px;font-size:13.5px;text-align:left}
+.event{margin:0 18px 18px;max-width:760px;border-left:4px solid var(--app-accent);background:var(--app-surface);border-radius:0 8px 8px 0;padding:12px 14px;font-size:15px}
+.event b{display:block;font-size:13px;color:var(--app-muted)}
+.acw{width:310px;border-left:1px solid var(--app-line);background:var(--app-surface);display:flex;flex-direction:column}
+.acw header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--app-line);font-weight:700}
+.acw .timer{display:flex;justify-content:space-between;padding:10px 14px;font-size:14px}
+.acw .timer span{font-family:var(--mono);color:var(--stop)}
+.acw input{margin:0 14px 8px;border:1px solid var(--app-line);border-radius:6px;padding:8px 10px;font-size:14px;background:var(--app-surface);width:calc(100% - 28px)}
+.codes{list-style:none;margin:0;padding:0 8px;flex:1}
+.codes button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 8px;border-radius:6px;font-size:14px;line-height:1.35}
+.codes button:hover{background:var(--app-bg)}
+.codes button.sel{background:var(--app-soft);font-weight:700}
+.acw footer{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--app-line);font-size:12.5px;color:var(--app-muted)}
+.acw footer div{flex:1;min-width:0}
+.acw footer b{display:block;color:var(--app-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.done{border:0;border-radius:6px;background:var(--app-accent);color:#fff;font-weight:700;padding:9px 16px;font-size:14px}
+.done:disabled{opacity:.4}
+.mc{position:absolute;left:190px;top:58px;width:330px;z-index:12;background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;padding:20px;box-shadow:0 14px 30px -12px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:12px}
+.mc h3{margin:0;font-size:19px;font-weight:400}
+.field{position:relative}
+.field input{width:100%;border:1px solid var(--app-line);border-radius:6px;padding:10px 12px;font-size:14.5px;background:var(--app-surface)}
+.field input:focus{outline:2px solid var(--app-accent);outline-offset:0}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--app-line);border-radius:6px;padding:9px 12px;font-size:14.5px}
+.chip span{flex:1}
+.chip button{border:0;background:none;font-size:18px;line-height:1;padding:0 4px;color:var(--app-muted)}
+.results{position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:14;background:var(--app-surface);border:1px solid var(--app-line);border-radius:6px;box-shadow:0 10px 22px -10px rgba(0,0,0,.4);padding:6px;font-size:14px}
+.results .lbl{font-weight:700;padding:4px 6px;font-size:13px}
+.results button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px;border-radius:5px}
+.results button:hover{background:var(--app-soft)}
+.results button small{display:block;color:var(--app-muted)}
+.results.tall{min-height:170px;color:var(--app-muted)} .results.tall p{margin:6px}
+.dialwrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0 2px}
+.dial{width:72px;height:72px;border-radius:50%;border:0;background:var(--app-line);color:#fff;display:grid;place-items:center}
+.dial svg{width:32px;height:32px}
+.dial:not(:disabled){background:var(--go)}
+.dialwrap span{font-size:13px;color:var(--app-accent)}
+.toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:var(--paper);color:var(--ink);border:1px solid var(--hair);border-left:5px solid var(--blue);box-shadow:0 12px 32px -12px rgba(0,0,0,.35);padding:10px 16px;border-radius:8px;font-size:14.5px;z-index:30;max-width:90%;text-align:center;font-family:var(--head)}
+.ring{position:absolute;z-index:25;pointer-events:none;border:2px solid var(--green);border-radius:10px;box-shadow:0 0 0 4px rgba(253,218,100,.75);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(253,218,100,.3)}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}}
+
+/* training layer */
+.tag{font-family:var(--head);font-size:14px;font-weight:500;margin:0;display:flex;align-items:center;gap:8px;color:var(--soft)}
+.tag span{background:var(--yellow);color:var(--ink);font-weight:900;border-radius:99px;padding:4px 10px;line-height:1}
+.panel.welcome{max-width:560px}
+.plan{list-style:none;margin:0;padding:0;counter-reset:pl;display:flex;flex-direction:column;gap:12px;font-size:16px}
+.plan li{counter-increment:pl;display:grid;grid-template-columns:34px 1fr;column-gap:12px}
+.plan li::before{content:counter(pl);grid-row:span 2;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);font-family:var(--head);font-weight:700;display:grid;place-items:center}
+.plan b{font-family:var(--head)}
+.plan span{color:#44443f}
+.fab{position:fixed;left:16px;bottom:16px;z-index:45;width:52px;height:52px;border-radius:50%;border:1.5px solid var(--ink);background:var(--yellow);color:var(--ink);display:grid;place-items:center;box-shadow:0 8px 20px -8px rgba(0,0,0,.45)}
+.fab:hover{background:#ffe588}
+.tmenu{position:fixed;left:16px;bottom:78px;z-index:46;width:290px;max-width:calc(100vw - 32px);background:var(--paper);border:1px solid var(--hair);border-radius:10px;padding:16px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px}
+.tmenu h2{font-family:var(--head);font-size:19px;margin:0}
+.tmenu .stage{margin:4px 0 0;font-family:var(--head);font-size:14px;color:var(--soft)}
+.tmenu .track{display:block;height:6px;border-radius:99px;background:var(--hair);overflow:hidden}
+.tmenu .track i{display:block;height:100%;background:var(--ink);transition:width .3s}
+.mitems{display:flex;flex-direction:column;margin:6px -8px -6px;border-top:1px solid var(--hair);padding-top:6px}
+.mitems button{border:0;background:none;text-align:left;font-family:var(--head);font-size:15px;font-weight:500;padding:9px 8px;border-radius:6px}
+.mitems button:hover{background:var(--page)}
+.callout{position:fixed;z-index:40;width:310px;max-width:calc(100vw - 16px);background:var(--paper);color:var(--ink);border:1px solid var(--hair);border-left:5px solid var(--yellow);border-radius:10px;padding:16px 18px 16px 16px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px;transition:left .25s,top .25s}
+@media (prefers-reduced-motion:reduce){.callout{transition:none}}
+.callout p,.brief p{margin:0}
+.count{font-family:var(--head);font-size:13.5px;font-weight:500;margin:0;color:var(--soft)}
+.callout h2,.panel h2,.brief h2{font-family:var(--head);font-weight:700;margin:0;text-wrap:balance}
+.callout h2{font-size:19px;line-height:1.2}
+.code{font-family:var(--mono);font-size:.88em;background:var(--blue-tint);border:1px solid var(--blue);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.why{align-self:flex-start;border:0;background:none;padding:0;font-family:var(--head);font-size:14px;font-weight:500;text-decoration:underline;color:var(--green)}
+.know{border-top:1px solid var(--hair);padding-top:10px;font-size:15px;color:#33332f}
+.know ol{margin:4px 0 0;padding-left:22px}
+.nudge{background:#fbf0ee;border-left:3px solid var(--bad);color:var(--bad);padding:8px 10px;font-size:15px}
+.okmsg{font-family:var(--head);font-weight:700;color:var(--good)}
+.okmsg::before{content:"✓ "}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font-family:var(--head);border:1.5px solid var(--green);background:var(--paper);color:var(--green);border-radius:8px;padding:9px 16px;font-weight:700;font-size:15px}
+.btn.primary{background:var(--green);color:#fff}
+.btn:disabled{opacity:.4}
+.brief{position:fixed;left:16px;bottom:80px;z-index:40;width:330px;max-width:calc(100vw - 28px);background:var(--paper);border:1px solid var(--hair);border-left:5px solid var(--yellow);border-radius:10px;padding:12px 16px 14px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
+.briefhead{display:flex;justify-content:space-between;border:0;background:none;padding:0;font-family:var(--head);font-weight:700;font-size:17px;text-align:left}
+.brief ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(29,29,27,.35);display:grid;place-items:center;padding:16px}
+.panel{background:var(--paper);border:1px solid var(--hair);border-top:5px solid var(--yellow);border-radius:12px;box-shadow:0 18px 44px -18px rgba(0,0,0,.4);padding:32px;max-width:520px;display:flex;flex-direction:column;gap:16px;font-size:17px}
+.panel p{margin:0}
+.panel h2{font-size:28px}
+.cards{flex:1;min-height:0;overflow:auto;background:var(--page);display:flex;justify-content:center;align-items:flex-start;padding:32px 16px}
+.cards .panel{max-width:720px;width:100%;border-top-color:var(--blue)}
+fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+legend{font-family:var(--head);font-weight:700;font-size:24px;line-height:1.25;padding:0;margin-bottom:14px;text-wrap:balance}
+fieldset label{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--hair);border-radius:10px;cursor:pointer}
+fieldset label:hover{border-color:var(--green)}
+fieldset label:has(input:checked){border-color:var(--ink);background:var(--blue-tint);box-shadow:inset 4px 0 0 var(--blue)}
+fieldset input{margin-top:5px;accent-color:var(--green)}
+.score{display:flex;flex-wrap:wrap;gap:20px;align-items:baseline;font-family:var(--head);font-variant-numeric:tabular-nums}
+.score strong{font-size:52px;line-height:1;font-weight:900;box-shadow:inset 0 -10px 0 var(--yellow)}
+.panel h3{font-family:var(--head);font-size:18px;margin:6px 0 0}
+.res{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:16px}
+.res li{display:grid;grid-template-columns:84px 1fr;gap:12px;border:1px solid var(--hair);border-radius:8px;padding:10px 12px;align-items:start}
+.res small{display:block;color:#4d4d4a;font-size:15px;margin-top:2px}
+.pill{font-family:var(--head);font-size:12.5px;font-weight:700;text-align:center;border-radius:99px;padding:4px 8px;white-space:nowrap}
+.pill{border:1px solid currentColor;background:none}
+.pill.ok{color:var(--good);background:#eaf3f0}
+.pill.no{color:var(--bad);background:#fbf0ee}
+
+/* browser + portal + sign-in + iCarol mocks */
+.app{--st:#3aa655;background:#dfe1e7}
+.tabs{display:flex;align-items:flex-end;gap:2px;padding:6px 8px 0;background:#cfd2da}
+.tab{display:flex;align-items:center;gap:8px;max-width:220px;min-width:120px;background:#dfe1e7;border-radius:8px 8px 0 0;font-size:13px;color:var(--app-muted)}
+.tab.on{background:#f4f5f8;color:var(--app-ink);font-weight:600}
+.tab .t{border:0;background:none;padding:8px 0 8px 12px;flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.tab .x{border:0;background:none;padding:4px 8px;font-size:14px;color:var(--app-muted);border-radius:4px}
+.tabs .plus{border:0;background:none;font-size:18px;padding:4px 10px;color:var(--app-muted);border-radius:6px;margin-bottom:2px}
+.bar{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f4f5f8;border-bottom:1px solid var(--app-line)}
+.bar span{color:var(--app-muted);font-size:16px;width:22px;text-align:center}
+.bar input{flex:1;border:1px solid transparent;background:#e6e8ee;border-radius:99px;padding:7px 16px;font-size:14px;font-family:var(--ui)}
+.bar input:focus{background:#fff;outline:2px solid var(--app-accent);outline-offset:0}
+.page{flex:1;min-height:0;overflow:auto;background:var(--app-surface);display:flex;flex-direction:column;position:relative}
+.page>section{flex:1;display:flex;flex-direction:column}
+.center{align-items:center;justify-content:center;gap:10px;color:var(--app-muted);background:var(--app-bg);text-align:center;padding:24px}
+.center b{font-size:22px;font-weight:400;color:var(--app-ink)}
+.si{background:#50586a;align-items:center;justify-content:center;padding:24px}
+.sicard{background:#fff;width:400px;max-width:100%;padding:32px 36px;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)}
+.sicard h3{margin:0;font-size:22px;font-weight:600}
+.sicard .org{font-size:14px;color:var(--app-muted);margin:0}
+.sicard p{margin:0;font-size:14.5px}
+.sicard .note{font-size:12.5px;color:var(--app-muted);border-top:1px solid var(--app-line);padding-top:10px}
+.sicard input{border:0;border-bottom:1.5px solid var(--app-muted);padding:8px 2px;font-size:15px;width:100%;cursor:pointer;background:transparent}
+.sicard .go{align-self:flex-end;border:0;background:var(--app-accent);color:#fff;padding:8px 28px;font-size:14.5px}
+.sicard .go:disabled{opacity:.4}
+.sicard .acct{display:flex;align-items:center;gap:12px;border:0;border-top:1px solid var(--app-line);border-bottom:1px solid var(--app-line);background:#f6f6f9;padding:14px 8px;font-size:14.5px;text-align:left}
+.sicard .acct:hover{background:var(--app-soft)}
+.sicard .other{border:0;background:none;text-align:left;padding:8px;font-size:14.5px;color:var(--app-muted)}
+.ph{background:#3f4458;color:#fff;padding:14px 22px;display:flex;align-items:center;gap:16px}
+.ph .logo{width:52px;height:52px;border-radius:50%;background:#FDDA64;color:#1d1d1b;font-weight:900;display:grid;place-items:center;font-size:15px;flex:none}
+.ph h2{margin:0;font-size:20px;font-weight:600}
+.ph nav{display:flex;gap:4px;margin-top:4px}
+.ph nav button{border:0;background:none;color:#fff;font-size:14px;padding:5px 10px;border-radius:5px}
+.ph nav button:hover,.ph .ini:hover{background:rgba(255,255,255,.16)}
+.ph .sp{flex:1}
+.ph .me{font-size:13.5px}
+.ph .ini{width:38px;height:38px;border-radius:50%;border:1.5px solid #fff;background:none;color:#fff;font-size:13px}
+.pmenu{position:absolute;right:14px;top:74px;width:320px;background:#fff;color:var(--app-ink);box-shadow:0 14px 30px -10px rgba(0,0,0,.45);z-index:12;border:1px solid var(--app-line)}
+.pmenu .top{display:flex;justify-content:space-between;align-items:center;padding:6px 6px 6px 16px;font-size:13.5px}
+.pmenu .top button{border:0;background:none;padding:10px 12px;font-size:13.5px}
+.pmenu .top button:hover{background:var(--app-bg)}
+.pmenu .who{display:flex;gap:14px;align-items:center;padding:10px 16px 18px}
+.pmenu .who span{width:64px;height:64px;border-radius:50%;border:1.5px solid var(--app-muted);display:grid;place-items:center;font-size:20px;flex:none}
+.pmenu .who b{display:block}
+.pmenu .who small{color:var(--app-muted)}
+.pbody{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:28px;padding:22px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.tiles button{border:0;text-align:left;font-size:22px;font-weight:700;line-height:1.25;padding:20px;min-height:200px;display:flex;align-items:flex-start;color:#1d1d1b}
+.tiles .a{background:#B8D8EB}.tiles .b{background:#FDDA64}.tiles .c{background:#235B4E;color:#fff}
+.plinks{display:flex;flex-direction:column;gap:10px}
+.plinks button{border:1px solid var(--app-line);background:#fff;border-radius:8px;padding:14px;font-size:15px;text-align:left;color:var(--app-accent);text-decoration:underline}
+.plinks button:hover{background:var(--app-soft)}
+.pnews{margin-top:22px;background:var(--app-bg);padding:16px 20px;font-size:15px}
+.pnews b{display:block;margin-bottom:4px}
+.gl{background:var(--app-bg);align-items:center;justify-content:center;gap:18px;padding:24px}
+.gl h2{margin:0;font-size:30px;font-weight:700}
+.glcard{background:#fff;border:1px solid var(--app-line);width:560px;max-width:100%;display:grid;grid-template-columns:1fr 180px}
+.glcard .f{padding:26px;display:flex;flex-direction:column;gap:12px}
+.glcard .f input{border:1px solid var(--app-line);border-radius:4px;padding:10px 12px;font-size:14.5px;background:#fafafc}
+.glcard .f .login{border:0;background:var(--app-accent);color:#fff;padding:12px;font-weight:700;font-size:15px;border-radius:4px}
+.glcard .f small{color:var(--app-muted);text-align:center}
+.glcard .f .ms{align-self:center;border:1px solid var(--app-line);background:#fff;border-radius:4px;padding:8px 22px;font-size:15px}
+.glcard .f .ms:hover{background:var(--app-soft)}
+.glcard .o{background:#5a3466;color:#fff;padding:22px;font-size:18px}
+.banner{background:var(--app-soft);padding:8px 14px;border-radius:6px;font-size:14.5px}
+.gch{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;background:#fff;border:1px solid var(--app-line);padding:28px;width:680px;max-width:100%}
+.gch button{border:1px solid var(--app-line);background:#fff;padding:22px 12px;font-size:17px;color:var(--app-accent);border-radius:4px}
+.gch button:hover{background:var(--app-soft)}
+.gch small{display:block;color:var(--app-muted);font-size:12.5px;margin-top:10px;line-height:1.35}
+.gmain{position:relative}
+.gmain .profile{flex:1}
+.avbtn{width:40px;height:40px;border-radius:50%;background:var(--app-line);display:grid;place-items:center;color:var(--app-muted);border:3px solid var(--st);padding:0}
+.profile .big{border:5px solid var(--st)} .profile .st{color:var(--st)}
+.pp{position:absolute;right:14px;top:62px;width:520px;z-index:12;background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;box-shadow:0 14px 30px -12px rgba(0,0,0,.4);display:grid;grid-template-columns:150px 1fr}
+.pp .sts{border-right:1px solid var(--app-line);padding:10px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--app-muted)}
+.pp .sts span::before{content:"";display:inline-block;width:13px;height:13px;border-radius:50%;border:2px solid var(--app-muted);margin-right:8px;vertical-align:-2px}
+.pp .sts span:first-child{color:var(--app-ink);font-weight:700}
+.pp .sts span:first-child::before{border-color:var(--st);background:var(--st)}
+.pp .info{padding:16px;display:flex;flex-direction:column;gap:10px}
+.pp .info b{font-size:19px;font-weight:400}
+.pp .info small{color:var(--app-muted)}
+.pp .aq{border:1px solid var(--app-accent);color:var(--app-accent);background:#fff;border-radius:6px;padding:9px;font-size:14px}
+.pp .foot{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--app-line)}
+.pp .foot button{border:0;background:none;padding:12px;font-size:14px;color:var(--app-ink)}
+.pp .foot button:hover{background:var(--app-bg)}
+.perm{position:absolute;left:14px;top:6px;width:300px;z-index:14;background:#fff;border-radius:12px;box-shadow:0 12px 30px -8px rgba(0,0,0,.45);padding:14px;display:flex;flex-direction:column;gap:8px;border:1px solid var(--app-line)}
+.perm b{font-size:14px;padding-right:24px}
+.perm p{margin:0 0 4px;font-size:13.5px;color:var(--app-muted)}
+.perm .x{position:absolute;right:6px;top:6px;border:0;background:none;font-size:16px;padding:4px 8px}
+.perm .opt{border:0;background:#cdeaf9;border-radius:99px;padding:9px;font-size:13.5px;font-weight:600}
+.perm .opt:hover{background:#b4def4}
+.icw{flex-direction:row!important;background:#f3f3f1}
+.icmenu{width:170px;padding:12px 8px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--app-line);background:#ececea}
+.icmenu b{font-size:22px;font-weight:400;color:var(--app-muted);padding:0 8px 10px}
+.icmenu button{border:1px solid transparent;background:none;text-align:left;padding:8px 10px;font-size:14px;border-radius:4px}
+.icmenu button:hover{background:#fff;border-color:var(--app-line)}
+.icmenu button.cur{background:#fff;border-color:#c9483b;color:#a02e23;font-weight:700}
+.icmain{flex:1;padding:18px 24px;display:flex;flex-direction:column;gap:14px}
+.icmain h3{margin:0;font-size:19px}
+.icgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;font-size:13.5px}
+.icgrid div{background:#fff;border:1px solid var(--app-line);min-height:90px}
+.icgrid div b{display:block;background:#5b79a5;color:#fff;padding:3px 8px;font-size:12.5px}
+.icgrid div span{display:block;padding:8px;color:var(--app-muted)}
+
+/* closer layouts (still neutral: no vendor logos or brand artwork) */
+.si{background:linear-gradient(120deg,#2b2f38,#4a505c 60%,#3a3f4a);align-items:stretch;justify-content:flex-end;padding:0;flex-direction:row!important}
+.sipane{background:#fff;width:40%;min-width:380px;padding:56px 44px;display:flex;flex-direction:column;gap:18px}
+.sicard{box-shadow:none;padding:0;width:100%;gap:14px}
+.sicard h3{font-size:24px}
+.sicard .back{font-size:14px;color:var(--app-ink)}
+.sicard .go{margin-top:18px;padding:8px 34px}
+.lnk{border:0;background:none;padding:0;color:var(--app-accent);font-size:13.5px;text-align:left;align-self:flex-start}
+.lnk:hover{text-decoration:underline}
+.sicard .acct .pl{width:20px;text-align:center;font-size:20px;color:var(--app-muted)}
+.sicard .acct.other{border-top:0;background:#fff}
+.siopt{display:flex;align-items:center;gap:12px;border:1px solid var(--app-line);background:#fff;padding:12px 16px;font-size:14.5px;box-shadow:0 2px 6px rgba(0,0,0,.12);margin-top:8px}
+.sipane .note{font-size:12.5px;color:var(--app-muted);margin:auto 0 0;border-top:1px solid var(--app-line);padding-top:10px}
+.gl{justify-content:flex-start;padding-top:28px;background:#f6f6f9}
+.gname{font-size:34px!important;font-weight:700}
+.glcard{width:640px;grid-template-columns:1fr 210px;border:0;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.glcard .f{padding:30px 34px 0;gap:12px}
+.fld{display:flex;border:1px solid var(--app-line);border-radius:3px;background:#fff}
+.fld span{width:44px;display:grid;place-items:center;background:#f3f3f6;border-right:1px solid var(--app-line);color:var(--app-muted)}
+.fld span svg{width:16px;height:16px}
+.glcard .f .fld input{border:0;flex:1;background:#fff;padding:11px 12px}
+.legal{margin:0;font-size:11.5px;line-height:1.4;text-align:justify;color:var(--app-ink)}
+.glcard .f .login{padding:14px;border-radius:2px;font-size:16px}
+.glcard .f .lnk{align-self:center;font-size:12px}
+.alt{margin:10px -34px 0;background:#f3f3f6;border-top:1px solid var(--app-line);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:12.5px}
+.glcard .f .ms{border:0;background:none;font-size:13px;padding:6px 14px}
+.glcard .f .ms:hover{background:#e4e6ee}
+.glcard .o{background:#59325f;display:flex;flex-direction:column;gap:14px;font-size:22px;padding:34px 24px}
+.glcard .o button{border:0;background:none;color:#fff;font-size:11.5px;text-align:left;padding:0}
+.gchw{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);width:760px;max-width:100%}
+.gch{width:auto;border:0;padding:40px 70px 34px;gap:16px}
+.gch button{padding:0;border-radius:0;display:flex;flex-direction:column}
+.gch button b{font-weight:400;font-size:16px;padding:22px 8px;min-height:78px;display:grid;place-items:center;border-bottom:1px solid var(--app-line);width:100%}
+.gch small{padding:12px 10px 16px;margin:0;font-size:11.5px;text-align:left;color:var(--app-ink)}
+.gout{background:#f6f6f9;border-top:1px solid var(--app-line);padding:16px;display:flex;justify-content:center}
+.gmain .onq{border:0}
+.gmain .onq i{background:var(--app-line)} .gmain .onq i::after{right:auto;left:2px}
+.gprof{position:relative;background:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 0 34px;border-bottom:1px solid var(--app-line)}
+.gprof .vpp{position:absolute;left:16px;top:14px;border:0;background:var(--app-soft);border-radius:4px;padding:6px 12px;font-size:12px;font-weight:700}
+.gprof .big{width:104px;height:104px;border-radius:50%;background:#b9b9bf;border:4px solid var(--st);display:grid;place-items:center;color:#fff}
+.gprof .big svg{width:60px;height:60px}
+.gprof .st{color:var(--st);font-weight:700;font-size:11.5px}
+.gprof b{font-size:25px;font-weight:300}
+.gprof small{font-size:13px}
+.gprof em{color:var(--app-muted);font-size:13px;font-style:normal;margin-top:6px}
+.gprof .mailb{position:absolute;bottom:-24px;width:48px;height:48px;border-radius:50%;background:var(--app-accent);color:#fff;display:grid;place-items:center}
+.gbelow{flex:1;background:var(--app-bg);display:flex;flex-direction:column;align-items:center;gap:22px;padding:44px 16px 24px}
+.addsec{border:0;background:#dfe1ee;border-radius:4px;padding:7px 14px;font-size:12px;font-weight:700}
+.gcards{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:640px;max-width:100%}
+.gcards>div{background:#fff;padding:16px 18px;font-size:13px;min-height:130px}
+.gcards h4{margin:0 0 12px;font-size:16px;font-weight:400;color:var(--app-muted)}
+.gcards p{margin:0 0 10px}
+.tabsx{display:flex;gap:28px;font-size:12px;border-bottom:1px solid var(--app-line);padding-bottom:6px}
+.tabsx span,.lk{color:var(--app-accent)}
+.pp{width:640px;grid-template-columns:160px 1fr;top:60px;right:8px;border-radius:2px}
+.pp .sts{gap:0;padding:0;background:#fff}
+.pp .sts span{padding:10px 12px}
+.pp .sts span:first-child{background:#f1f1f5;color:var(--st)}
+.pp .sts span small{display:block;margin-left:25px;font-weight:400;color:var(--app-muted)}
+.pp .who{display:flex;gap:16px;align-items:center}
+.pp .who .av{width:110px;height:110px;border-radius:50%;background:#b9b9bf;border:4px solid var(--st);display:grid;place-items:center;color:#fff;flex:none}
+.pp .who .av svg{width:62px;height:62px}
+.pp .who b{font-size:22px;font-weight:300;display:block}
+.pp .who small{display:block;font-size:13.5px;color:var(--app-ink)}
+.pp .wom,.pp .phone{border:1px solid var(--app-line);padding:11px 12px;color:var(--app-muted);font-size:15px;border-radius:0}
+.pp .foot .ooo{color:var(--app-accent)}
+.perm{left:6px;top:6px;width:380px;border-radius:14px;padding:18px 20px;gap:14px;border:2px solid #b7c6ee}
+.perm b{font-size:16px;font-weight:600}
+.perm p{font-size:14.5px;color:var(--app-ink);margin:0}
+.perm .x{right:12px;top:12px;font-size:20px}
+.pbtns{display:flex;justify-content:flex-end;gap:10px}
+.pbtns button{border:1px solid #9aa0ac;background:#fff;border-radius:6px;padding:8px 16px;font-size:14.5px;font-weight:600}
+.pbtns button:hover{background:#eef1fb}
+.portal{position:relative}
+.suite{background:#3f4458;color:#fff;display:flex;align-items:center;gap:16px;padding:6px 14px;border-bottom:1px solid rgba(255,255,255,.12)}
+.suite .ssearch{background:#fff;color:var(--app-muted);border-radius:3px;padding:6px 14px;width:300px;font-size:13.5px}
+.suite .sico{font-size:16px;opacity:.9}
+.suite .sp{flex:1}
+.suite .me{font-size:13px}
+.suite .ini{width:32px;height:32px;border-radius:50%;border:1.5px solid #fff;background:none;color:#fff;font-size:12px}
+.suite .ini:hover{background:rgba(255,255,255,.16)}
+.pwrap{flex:1;display:flex}
+.rail{width:40px;background:#f3f3f6;border-right:1px solid var(--app-line);display:flex;flex-direction:column;align-items:center;gap:22px;padding-top:16px}
+.rail i{width:16px;height:16px;border:1.5px solid var(--app-muted);border-radius:4px;opacity:.6}
+.pcol{flex:1;min-width:0}
+.ph{padding:14px 26px}
+.ph .logo{width:58px;height:58px;font-size:16px}
+.ph h2{font-size:22px}
+.ph .me{font-size:13px}
+.pbody{grid-template-columns:minmax(0,1fr) 170px;gap:44px;padding:26px 30px}
+.tiles button{position:relative;min-height:290px;font-size:25px;padding:26px 24px;flex-direction:column;gap:18px}
+.tiles button svg{width:120px;height:120px;stroke-width:.9;align-self:center;margin-top:auto}
+.tiles button em{position:absolute;right:16px;bottom:12px;font-style:normal;font-size:30px}
+.plinks{gap:22px;align-items:center}
+.plinks button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px;font-size:14.5px}
+.plinks button i{width:60px;height:60px;border-radius:50%;border:2px solid var(--app-muted);opacity:.55;display:block}
+.pmenu{top:46px;right:6px;width:360px}
+.pmenu .top button{font-size:14px;padding:12px 14px}
+.pmenu .who span{width:88px;height:88px;font-size:30px}
+.pmenu .who b{font-size:17px}
+.pmenu .who .lnk{display:block;margin-top:3px;text-decoration:underline}
+.pmenu .diff{display:flex;align-items:center;gap:12px;width:100%;border:0;background:#f3f3f6;padding:14px 16px;font-size:13.5px;text-align:left}
+.icw{flex-direction:column!important;background:#f4f4f2}
+.ictop{display:flex;justify-content:space-between;align-items:baseline;padding:6px 14px 2px;color:var(--app-muted);font-size:12px}
+.ictop b{font-size:24px;font-weight:400}
+.icrow{flex:1;display:flex}
+.icmenu{width:150px;background:#eaeae8;border-right:0;padding:6px}
+.icmenu button{font-weight:700;font-size:12.5px}
+.icmenu .gap{margin-top:8px}
+.icmain{background:#fff;padding:12px 16px}
+.ich{display:flex;justify-content:space-between;align-items:center}
+.ich .lang{font-size:12px;border:1px solid var(--app-line);padding:2px 8px}
+.icann{border:1px solid #d9a3a3;border-radius:4px;padding:12px 16px;font-size:14.5px;max-width:860px;display:flex;flex-direction:column;gap:8px}
+.icann .lnk{color:#6a4fb6;font-weight:700;font-size:15px}
+.icgrid{max-width:860px}
+.icgrid .plain{border:0;background:none;display:grid;place-items:center}
+
+/* ---- training layer, revised look: rounded cards, yellow step chip and highlighter headings in place of edge bars ---- */
+.callout{border:1px solid var(--hair);border-radius:16px;padding:18px 20px;box-shadow:0 16px 40px -14px rgba(0,0,0,.42)}
+.callout .count{align-self:flex-start;background:var(--yellow);color:var(--ink);border-radius:99px;padding:3px 12px;font-size:12.5px;font-weight:700}
+.brief{border:1px solid var(--hair);border-radius:16px;padding:14px 18px 16px}
+.briefhead span:first-child,.tmenu h2,.panel h2{background-image:linear-gradient(transparent 62%,var(--yellow) 62%);padding:0 4px;margin-left:-4px}
+.panel h2{align-self:flex-start}
+.panel{border:1px solid var(--hair);border-radius:18px}
+.cards .panel{border-top-color:var(--hair)}
+.tmenu{border-radius:16px}
+.fab{border-radius:16px;border:0;background:var(--ink);color:var(--yellow)}
+.fab:hover{background:#34342f}
+.btn{border-radius:99px;padding:9px 20px}
+.ring{border-radius:12px}
+.toast{background:var(--ink);color:#fff;border:0;border-radius:12px}
+.plan li::before{border:0;background:var(--yellow)}
+.score strong{box-shadow:none;background-image:linear-gradient(transparent 62%,var(--yellow) 62%);padding:0 6px}
+.mitems a,.mitems button{display:block;text-decoration:none;color:var(--ink)}
+fieldset label{border-radius:14px}
+.res li{border-radius:12px}
+</style>
+</head>
+<body>
+<section class="sim" id="simView">
+<div class="app" id="app">
+  <div class="tabs" id="tabs" role="tablist" aria-label="Browser tabs"></div>
+  <div class="bar"><span aria-hidden="true">←</span><span aria-hidden="true">→</span><span aria-hidden="true">⟳</span><input id="addr" type="text" aria-label="Address bar" placeholder="Search or type a URL" autocomplete="off" spellcheck="false"></div>
+  <div class="page" id="page">
+    <section class="center" id="vBlank"><b>New tab</b><span>Type a web address in the bar above.</span></section>
+
+    <section class="si" id="vSignin" hidden>
+      <div class="sipane"><div class="sicard" id="siCard">
+        <p class="org" id="siOrg">Sign-in service</p>
+        <div id="siEmailBlk" style="display:contents"><h3>Sign in</h3><input id="siEmail" type="text" readonly placeholder="Email, phone, or Skype" aria-label="Email. Select to fill in the training email."><button class="lnk" data-inert>Can't access your account?</button><button class="go" id="siNext" disabled>Next</button></div>
+        <div id="siPickBlk" style="display:contents"><h3>Pick an account</h3><button class="acct" id="siPick"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg> traininguser@988.ca</button><button class="acct other" data-inert><span class="pl">+</span> Use another account</button></div>
+        <div id="siPassBlk" style="display:contents"><p class="back">← traininguser@988.ca</p><h3>Enter password</h3><input id="siPass" type="text" readonly placeholder="Password" aria-label="Password. Select to fill in the training password."><button class="lnk" data-inert>Forgot my password</button><button class="go" id="siSignin" disabled>Sign in</button></div>
+        <div id="siMfaBlk" style="display:contents"><h3>Verify your identity</h3><p>Follow the instructions to authenticate your account. This step is simulated here.</p><button class="go" id="siMfa">Continue</button></div>
+      </div>
+      <button class="siopt" data-inert id="siOpt"><svg class="ic" viewBox="0 0 20 20" ><circle cx="7" cy="10" r="3"/><path d="M10 10h7M14.500 10v2.500M17 10v2"/></svg> Sign-in options</button>
+      <p class="note">Practice sign-in. Select a field to fill in made-up training details. Never type a real password here.</p></div>
+    </section>
+
+    <section class="portal" id="vPortal" hidden>
+      <div class="suite"><span class="sp"></span><span class="ssearch">Search this site</span><span class="sp"></span><span class="sico"><svg class="ic" viewBox="0 0 20 20" ><circle cx="10" cy="10" r="2.500"/><circle cx="10" cy="10" r="6.500" stroke-dasharray="3 2.200"/></svg></span><span class="sico">?</span><span class="me">Training User</span><button class="ini" id="btnInitials" aria-label="Account menu for Training User" aria-haspopup="true" aria-expanded="false">TU</button></div>
+      <div class="pwrap"><div class="rail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="pcol">
+      <div class="ph"><span class="logo">9-8-8</span><div><h2>Network Portal</h2><nav><button data-inert>Resources ⌄</button><button id="pNavI">iCarol - 9-8-8 only</button><button id="pNavG">Genesys Cloud</button></nav></div><span class="sp"></span><span class="me">☆ Not following</span><span class="me">English ⌄</span></div>
+      <div class="pbody"><div><div class="tiles">
+        <button class="a" data-inert><span>Intervention Manual</span><svg class="ic" viewBox="0 0 20 20" ><path d="M10 16s-5-3-5-6.500A2.700 2.700 0 0 1 10 8a2.700 2.700 0 0 1 5 1.500C15 13 10 16 10 16z"/></svg><em>➜</em></button>
+        <button class="b" data-inert><span>Standard Operating Procedures</span><svg class="ic" viewBox="0 0 20 20" ><rect x="4.500" y="4" width="11" height="13" rx="1"/><path d="M7.500 4V2.800h5V4M7 8.500h1M10 8.500h3.500M7 11.500h1M10 11.500h3.500M7 14.500h1M10 14.500h3.500"/></svg><em>➜</em></button>
+        <button class="c" data-inert><span>Resource Database</span><svg class="ic" viewBox="0 0 20 20" ><path d="M10 17.500s5-5 5-9a5 5 0 0 0-10 0c0 4 5 9 5 9z"/><circle cx="10" cy="8.500" r="1.800"/></svg><em>➜</em></button></div>
+        <div class="pnews"><b>Announcements, News &amp; Reminders</b>No announcements in this practice portal.</div></div>
+      <div class="plinks"><button id="pLinkG"><i></i>Genesys PureCloud</button><button id="pLinkI"><i></i>iCarol (9-8-8 only)</button><button data-inert><i></i>Tableau Dashboard</button><button data-inert><i></i>E-Learning</button></div></div>
+      </div></div>
+      <div class="pmenu" id="pMenu" hidden><div class="top"><span>988 Canada</span><button id="btnPSignout">Sign out</button></div><div class="who"><span>TU</span><div><b>Training User</b><small>traininguser@988.ca</small><button class="lnk" data-inert>View account</button><button class="lnk" data-inert>My Microsoft 365 profile</button></div></div><button class="diff" data-inert><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg> Sign in with a different account</button></div>
+    </section>
+    <section class="center" id="vPortalOut" hidden><b>You signed out of your account</b><span>It is a good idea to close all browser windows.</span></section>
+
+    <section class="gl" id="vGLogin" hidden>
+      <h2 class="gname">Genesys Cloud</h2>
+      <div class="banner" id="gOutBanner" hidden>You have been logged out.</div>
+      <div class="glcard"><div class="f">
+        <div class="fld" data-direct><span><svg class="ic" viewBox="0 0 20 20" ><path d="M3 5h14v10H3zM3 6l7 5 7-5"/></svg></span><input type="text" placeholder="Email Address" readonly data-direct aria-label="Email Address"></div>
+        <div class="fld" data-direct><span><svg class="ic" viewBox="0 0 20 20" ><rect x="5" y="9" width="10" height="8" rx="1.500"/><path d="M7 9V6.500a3 3 0 0 1 6 0V9"/></svg></span><input type="text" placeholder="Password" readonly data-direct aria-label="Password"></div>
+        <p class="legal">This platform is provided for the intended use of your organization. Use may be monitored for improper or unauthorized access.</p>
+        <button class="login" data-direct>Log In</button><button class="lnk" data-inert>Forgot Your Password?</button>
+        <div class="alt"><b>Log in with another account:</b><button class="ms" id="gMs">Microsoft</button></div>
+      </div><div class="o"><span>988 Canada</span><button data-inert>[ Change Organization ]</button></div></div>
+    </section>
+    <section class="gl" id="vGChoose" hidden>
+      <h2 class="gname">Genesys Cloud</h2>
+      <div class="gchw"><div class="gch"><button data-inert><b>My Account</b><small>Access and Administer your Genesys Cloud Account settings such as MFA</small></button><button id="gCollab"><b>Collaborate/<br>Communicate</b><small>Real-time tools like group chat, video conference, desktop and file sharing, and unified communications</small></button><button data-inert><b>Architect</b><small>Configure Genesys Cloud call flows, set user &amp; system prompts, and more</small></button></div><div class="gout"><button class="lnk" data-inert>Logout</button></div></div>
+    </section>
+    <section class="gmain" id="vGMain" hidden>
+      <div class="topbar"><button class="menu" data-inert>≡ Menu</button><span class="search">Search for pages, users, groups and locations</span><span class="sp"></span>
+        <button class="ib" data-inert title="Help" aria-label="Help"><svg class="ic" viewBox="0 0 20 20" ><circle cx="10" cy="10" r="7.500"/><path d="M8 8a2 2 0 1 1 3 1.700c-.7.4-1 .8-1 1.600M10 14v.2"/></svg></button>
+        <button class="ib" data-inert title="Calls" aria-label="Calls"><svg class="ic" viewBox="0 0 20 20" ><path d="M5.500 3h2.700l1.300 3.600-1.800 1.400a8.500 8.500 0 0 0 4.300 4.300l1.400-1.800 3.600 1.300v2.700a1.500 1.500 0 0 1-1.600 1.500C9.300 15.600 4.400 10.700 4 4.600A1.500 1.500 0 0 1 5.500 3z"/></svg></button>
+        <button class="ib" data-inert title="Chat" aria-label="Chat"><svg class="ic" viewBox="0 0 20 20" ><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg></button>
+        <button class="ib" data-inert title="Inbox" aria-label="Inbox"><svg class="ic" viewBox="0 0 20 20" ><path d="M3 11l2-7h10l2 7v5H3zM3 11h4l1 2h4l1-2h4"/></svg></button>
+        <button class="ib" data-inert title="Agent Workspace" aria-label="Agent Workspace"><svg class="ic" viewBox="0 0 20 20" ><circle cx="8" cy="7" r="3"/><path d="M2.500 17c.5-3.500 2.800-5 5.500-5s5 1.500 5.500 5M14.500 5a3.500 3.500 0 0 1 0 4.500M16.500 3.500a6 6 0 0 1 0 7.500"/></svg></button>
+        <button class="onq" data-inert role="switch" aria-checked="false">Off Queue <i></i></button>
+        <button class="avbtn" id="btnProfile" title="Profile" aria-label="Profile" aria-haspopup="true" aria-expanded="false"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg></button></div>
+      <div class="gprof"><button class="vpp" data-inert>View Public Profile</button>
+        <span class="big"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg></span><span class="st">Available</span><b>Training User</b><small>988 Hub Responder</small><em>What's on your mind?</em>
+        <span class="mailb"><svg class="ic" viewBox="0 0 20 20" ><path d="M3 5h14v10H3zM3 6l7 5 7-5"/></svg></span></div>
+      <div class="gbelow"><button class="addsec" data-inert>+ Add New Section</button>
+        <div class="gcards"><div><h4>Groups</h4><p class="tabsx"><u>Official</u><span>Social</span><span>Owned</span></p><p>988 - Agents</p></div><div><h4>Contact Information</h4><p><small>Main Email</small><br><span class="lk">traininguser@988.ca</span></p><p><small>Work Email</small><br><span class="lk">traininguser@988.ca</span></p></div></div></div>
+      <div class="pp" id="profPanel" hidden role="dialog" aria-label="Profile"><div class="sts"><span>Available<small>18s</small></span><span>Busy</span><span>Away</span><span>Break</span><span>Meal</span><span>Meeting</span><span>Training</span></div>
+        <div class="info"><div class="who"><span class="av"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg></span><div><b>Training User</b><small>988 Hub Responder</small><small>988 Canada</small><small>No location available.</small></div></div>
+          <div class="wom">What's on your mind?</div><div class="phone">Training User - WebRTC</div><button class="aq" data-inert>Activate Queues</button></div>
+        <div class="foot"><button data-inert class="ooo">Out of Office ›</button><button data-inert>Preferences</button><button id="btnGLogout">Logout</button></div></div>
+      <div class="perm" id="perm" hidden role="alertdialog" aria-label="Permission request"><button class="x" id="permX" aria-label="Close">×</button><b>apps.cac1.pure.cloud wants to</b><p id="permWhat"></p><div class="pbtns" id="permBtns"></div></div>
+    </section>
+
+    <section class="icw" id="vICarol" hidden>
+      <div class="ictop"><b>iCarol</b><span>Training / 9-8-8 Suicide Crisis Helpline / Monday, June 1</span></div>
+      <div class="icrow"><div class="icmenu"><button class="cur" data-inert>⌂ Home</button><button data-inert>Vols-Staff</button><button data-inert>Contacts</button><button data-inert>Profiles</button><button data-inert>Chatboard</button><button data-inert class="gap">My Profile</button><button data-inert>Help</button><button id="iExit">⇥ Exit</button></div>
+      <div class="icmain"><div class="ich"><h3>Welcome to iCarol!</h3><span class="lang">English ⌄</span></div>
+        <div class="icann">iCarol is excited to announce a new homepage experience. Please click below to enable the new homepage. You can return to this experience if needed.<button class="lnk" data-inert>Enable new homepage</button></div>
+        <div class="icgrid"><div><b>Your shifts</b><span>Some of the shifts others need covered</span></div><div><b>Chatboard</b><span></span></div><div><b>Recent News</b><span>Feature turned off by administrators. (No recent news to show.)</span></div>
+        <div><b>Upcoming shifts</b><span></span></div><div><b>Recent Contacts</b><span></span></div><div class="plain"><span><strong>9-8-8 Suicide Crisis Helpline</strong></span></div>
+        <div><b>Release history and plans</b><span>Practice copy.</span></div><div><b>iCarol Help Center</b><span>Help articles are not part of this simulation.</span></div></div></div></div>
+    </section>
+    <section class="center" id="vIOut" hidden><b>You have exited iCarol</b><span>You are signed out.</span></section>
+  </div>
+  <div class="ring" id="ring" hidden></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+</section>
+<section class="cards" id="cardView" hidden></section>
+<div class="callout" id="callout" role="region" aria-label="Practice step" aria-live="polite" hidden></div>
+<aside class="brief" id="brief" aria-label="Scenario task" hidden></aside>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Practice complete" hidden></div>
+<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="welTitle">
+  <div class="panel welcome">
+    <p class="tag"><span>9-8-8</span> Technology Training</p>
+    <h2 id="welTitle">Logging in and logging off</h2>
+    <p>Practise signing in to the 9-8-8 portal, Genesys Cloud and iCarol at the start of a shift, and signing out of all three at the end. Nothing here is live, and no real passwords are used.</p>
+    <ol class="plan">
+      <li><b>Guided practice</b><span>Sixteen steps, each one highlighted on the screen.</span></li>
+      <li><b>Scenario</b><span>A start of shift and an end of shift on your own, with no highlights.</span></li>
+      <li><b>Knowledge check</b><span>Four short questions, then your results.</span></li>
+    </ol>
+    <div class="row"><button class="btn primary" data-act="begin" id="btnBegin">Start practice</button><button class="btn" data-act="assess">Go straight to the scenario</button></div>
+  </div>
+</div>
+<button class="fab" id="fab" data-act="menu" aria-haspopup="true" aria-expanded="false" aria-controls="menuPop" aria-label="Training menu" title="Training menu"><svg class="ic" viewBox="0 0 20 20" stroke-width="2"><path d="M4 6h12M4 10h12M4 14h12"/></svg></button>
+<div class="tmenu" id="menuPop" hidden>
+  <p class="tag"><span>9-8-8</span> Technology Training</p>
+  <h2>Logging in and logging off</h2>
+  <p class="stage" aria-live="polite" id="stageLabel"></p>
+  <span class="track" aria-hidden="true"><i id="prog"></i></span>
+  <div class="mitems">
+    <button data-act="home">All simulations</button>
+    <button id="btnSkip" data-act="assess">Skip to the scenario</button>
+    <button id="btnRestart" data-act="restartAny">Start over</button>
+    <button data-act="full">Full screen</button>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const show=(el,on)=>{el.hidden=!on;};
+const disp=(el,on)=>{el.style.display=on?'contents':'none';};
+const esc=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const mmss=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+let mode='practice', S, R;
+function reset(){
+  S={tabs:[{id:1,app:'blank'}],active:1,nextId:2,badUrl:'',fill:{email:false,pass:false},
+     p:{view:'email',menu:false},g:{view:'login',panel:false,prompt:null,mic:null,loc:null,out:false},i:{view:'home'}};
+  R={portal:false,pIn:false,gMain:false,iOpen:false,gOut:false,iOut:false,pOut:false};
+  $('addr').value='';
+}
+const cur=()=>S.tabs.find(t=>t.id===S.active);
+const on=app=>cur().app===app;
+const hasTab=app=>S.tabs.some(t=>t.app===app);
+const TITLE={blank:'New tab',portal:'Network Portal',genesys:'Genesys Cloud',icarol:'iCarol'};
+function urlFor(t){
+  if(t.app==='portal')return S.p.view==='home'?'portal.988.ca':S.p.view==='out'?'portal.988.ca (signed out)':'Sign in (simulated)';
+  if(t.app==='genesys')return ['pick','pass'].includes(S.g.view)?'Sign in (simulated)':'Genesys Cloud (simulated)';
+  if(t.app==='icarol')return 'iCarol (simulated)';
+  return '';
+}
+function openApp(app){ const ex=S.tabs.find(t=>t.app===app); if(ex){ S.active=ex.id; return; } const t={id:S.nextId++,app}; S.tabs.push(t); S.active=t.id; S.fill={email:false,pass:false}; }
+function render(){
+  const t=cur();
+  $('tabs').innerHTML=S.tabs.map(x=>'<div class="tab'+(x.id===S.active?' on':'')+'"><button class="t" role="tab" aria-selected="'+(x.id===S.active)+'" data-tab="'+x.id+'" data-app="'+x.app+'">'+esc(x.app==='portal'&&!['home','out'].includes(S.p.view)?'Sign in':TITLE[x.app])+'</button><button class="x" data-close="'+x.id+'" aria-label="Close tab">×</button></div>').join('')+'<button class="plus" id="newTab" aria-label="New tab" title="New tab">+</button>';
+  if(document.activeElement!==$('addr')) $('addr').value=urlFor(t);
+  const a=t.app, pv=S.p.view, gv=S.g.view;
+  const signin=(a==='portal'&&['email','pass','mfa'].includes(pv))||(a==='genesys'&&['pick','pass'].includes(gv));
+  show($('vBlank'),a==='blank'); show($('vSignin'),signin);
+  if(signin){ const v=a==='portal'?pv:gv;
+    disp($('siEmailBlk'),v==='email'); disp($('siPickBlk'),v==='pick'); disp($('siPassBlk'),v==='pass'); disp($('siMfaBlk'),v==='mfa');
+    $('siEmail').value=S.fill.email?'traininguser@988.ca':''; $('siPass').value=S.fill.pass?'••••••••••••':'';
+    $('siNext').disabled=!S.fill.email; $('siSignin').disabled=!S.fill.pass;
+    $('siOrg').textContent=a==='portal'?'Sign-in service for the 9-8-8 portal':'Sign-in service for Genesys Cloud'; }
+  show($('vPortal'),a==='portal'&&pv==='home'); show($('vPortalOut'),a==='portal'&&pv==='out');
+  show($('pMenu'),S.p.menu); $('btnInitials').setAttribute('aria-expanded',S.p.menu);
+  show($('vGLogin'),a==='genesys'&&gv==='login'); show($('gOutBanner'),S.g.out);
+  show($('vGChoose'),a==='genesys'&&gv==='choose'); show($('vGMain'),a==='genesys'&&gv==='main');
+  show($('profPanel'),S.g.panel); $('btnProfile').setAttribute('aria-expanded',S.g.panel);
+  show($('perm'),!!S.g.prompt); $('permWhat').textContent=S.g.prompt==='mic'?'Use your microphones':'Know your location'; if(S.g.prompt&&$('permBtns').dataset.k!==S.g.prompt){ $('permBtns').dataset.k=S.g.prompt; $('permBtns').innerHTML='<button data-perm="deny">Block</button>'+(S.g.prompt==='loc'?'<button data-perm="once">Just this time</button>':'')+'<button data-perm="allow" id="permAllow">Allow</button>'; }
+  show($('vICarol'),a==='icarol'&&S.i.view==='home'); show($('vIOut'),a==='icarol'&&S.i.view==='out');
+}
+let toastTimer;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,3800); }
+function perm(ans){ if(S.g.prompt==='mic'){ S.g.mic=ans; S.g.prompt='loc'; } else { S.g.loc=ans; S.g.prompt=null; } }
+
+$('addr').addEventListener('focus',()=>{ $('addr').select(); });
+$('addr').addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return; e.preventDefault();
+  const v=$('addr').value.trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').replace(/\/+$/,'');
+  if(v==='portal.988.ca'){ S.badUrl=''; const ex=S.tabs.find(t=>t.app==='portal'); if(ex&&ex.id!==S.active){ S.active=ex.id; } else { cur().app='portal'; } if(S.p.view==='out'){ S.p.view='email'; S.fill={email:false,pass:false}; } R.portal=true; }
+  else if(v){ S.badUrl=v; toast('This practice browser only opens the 9-8-8 portal. Check the address and try again.'); }
+  $('addr').blur(); after();
+});
+$('app').addEventListener('click',e=>{
+  const b=e.target.closest('button,input'); if(!b||b.id==='addr')return;
+  if(b.hasAttribute('data-inert')){ toast('That control is not part of this simulation.'); return; }
+  if(b.hasAttribute('data-direct')){ toast('Do not log in here. Select Microsoft to use your portal credentials.'); return; }
+  const id=b.id, a=cur().app;
+  if(b.dataset.tab){ S.active=+b.dataset.tab; S.p.menu=false; S.g.panel=false; }
+  else if(b.dataset.close){ if(mode==='practice'){ toast('Keep your tabs open for the practice.'); return; } S.tabs=S.tabs.filter(t=>t.id!==+b.dataset.close); if(!S.tabs.length)S.tabs=[{id:S.nextId++,app:'blank'}]; if(!S.tabs.some(t=>t.id===S.active))S.active=S.tabs[S.tabs.length-1].id; }
+  else if(id==='newTab'){ const t={id:S.nextId++,app:'blank'}; S.tabs.push(t); S.active=t.id; }
+  else if(id==='siEmail'){ S.fill.email=true; }
+  else if(id==='siPass'){ S.fill.pass=true; }
+  else if(id==='siNext'){ S.p.view='pass'; }
+  else if(id==='siPick'){ S.g.view='pass'; S.fill.pass=false; }
+  else if(id==='siSignin'){ if(a==='portal'){ S.p.view='mfa'; } else { S.g.view='choose'; } S.fill={email:false,pass:false}; }
+  else if(id==='siMfa'){ S.p.view='home'; R.pIn=true; }
+  else if(id==='pNavG'||id==='pLinkG'){ S.p.menu=false; openApp('genesys'); }
+  else if(id==='pNavI'||id==='pLinkI'){ S.p.menu=false; openApp('icarol'); if(S.i.view==='out')S.i.view='home'; R.iOpen=true; }
+  else if(id==='btnInitials'){ S.p.menu=!S.p.menu; }
+  else if(id==='btnPSignout'){ S.p.view='out'; S.p.menu=false; R.pOut=true; }
+  else if(id==='gMs'){ S.g.view='pick'; S.g.out=false; }
+  else if(id==='gCollab'){ S.g.view='main'; R.gMain=true; if(S.g.mic===null&&S.g.loc===null)S.g.prompt='mic'; }
+  else if(id==='btnProfile'){ S.g.panel=!S.g.panel; }
+  else if(id==='btnGLogout'){ S.g.view='login'; S.g.panel=false; S.g.prompt=null; S.g.out=true; R.gOut=true; }
+  else if(b.dataset.perm){ if(b.dataset.perm!=='allow'&&mode==='practice'){ toast('Select Allow so that Genesys Cloud can use your microphone and know your location.'); return; } perm(b.dataset.perm==='once'?'allow':b.dataset.perm); }
+  else if(id==='permX'){ if(mode==='practice'){ toast('Select Allow before you close this.'); return; } perm('dismissed'); }
+  else if(id==='iExit'){ S.i.view='out'; R.iOut=true; }
+  after();
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&(S.p.menu||S.g.panel)){ S.p.menu=false; S.g.panel=false; after(); } });
+
+/* ---------- guided practice ---------- */
+const tabBtn=app=>document.querySelector('#tabs [data-app="'+app+'"]');
+const inTab=(app,el)=>[on(app)?el():tabBtn(app)];
+const card=()=>[$('siCard')];
+const STEPS=[
+ {title:'Go to the 9-8-8 portal',side:'below',how:'Select the address bar, type <span class="code">portal.988.ca</span> and press <b>Enter</b>.',
+  know:'Open your browser first (Chrome is recommended) and close all other applications and browser tabs.',
+  target:()=>[$('addr')],check:()=>hasTab('portal'),nudge:()=>S.badUrl?'"'+esc(S.badUrl)+'" is not the portal address. Type portal.988.ca.':''},
+ {title:'Enter your email',side:'left',anchor:card,how:'Select the email field to fill in the training email, then select <b>Next</b>.',
+  know:'On shift you will type your own 9-8-8 email. This practice fills in a made-up one for you.',
+  target:()=>[S.fill.email?$('siNext'):$('siEmail')],check:()=>S.p.view!=='email'},
+ {title:'Enter your password',side:'left',anchor:card,how:'Select the password field, then select <b>Sign in</b>.',
+  know:'Use the password provided by Gazelle. Never type a real password into this practice.',
+  target:()=>[S.fill.pass?$('siSignin'):$('siPass')],check:()=>!['email','pass'].includes(S.p.view)},
+ {title:'Authenticate your account',side:'left',anchor:card,how:'Select <b>Continue</b>.',
+  know:'On shift, follow the instructions on screen to authenticate your account. That step is simulated here.',
+  target:()=>[$('siMfa')],check:()=>R.pIn},
+ {title:'Open Genesys Cloud',side:'below',how:'On the portal home page, select <b>Genesys Cloud</b>.',
+  know:'Genesys Cloud is for taking calls and texts and for making outbound calls.',
+  target:()=>inTab('portal',()=>$('pNavG')),check:()=>hasTab('genesys')},
+ {title:'Select Microsoft',side:'right',anchor:()=>[document.querySelector('.glcard')],how:'Another login page has appeared. Select <b>Microsoft</b>.',
+  know:'Do not use the email and password boxes on this page.',
+  target:()=>inTab('genesys',()=>$('gMs')),check:()=>S.g.view!=='login'||R.gMain},
+ {title:'Use the same credentials',side:'left',anchor:card,how:'Select your account, then select the password field and <b>Sign in</b>.',
+  know:'Enter the same credentials you used to log in to the 9-8-8 portal.',
+  target:()=>[S.g.view==='pick'?$('siPick'):(S.fill.pass?$('siSignin'):$('siPass'))],check:()=>['choose','main'].includes(S.g.view)||R.gMain},
+ {title:'Select Collaborate/Communicate',side:'below',how:'Select <b>Collaborate/Communicate</b>.',
+  know:'This opens the Genesys Cloud main page, where you take interactions.',
+  target:()=>[$('gCollab')],check:()=>R.gMain},
+ {title:'Allow your microphone',side:'right',anchor:()=>[$('perm')],how:'Select <b>Allow</b>.',
+  know:'Two screens pop up at the top of the Genesys Cloud page when you first log in, clear your cookies or change the browser. Select Allow for both.',
+  target:()=>[$('permAllow')],check:()=>S.g.mic==='allow'},
+ {title:'Allow your location',side:'right',anchor:()=>[$('perm')],how:'Select <b>Allow</b> again.',
+  know:'This lets Genesys Cloud know your location.',
+  target:()=>[$('permAllow')],check:()=>S.g.loc==='allow'},
+ {title:'Open iCarol',side:'below',how:'Go back to the <b>Network Portal</b> tab and select <b>iCarol - 9-8-8 only</b>.',
+  know:'iCarol is for documenting interactions. If you reach 9-8-8 contact reports through your own organization\'s iCarol (guest access), log in as you normally would at your organization instead.',
+  target:()=>inTab('portal',()=>$('pNavI')),check:()=>hasTab('icarol')},
+ {title:'End of shift: open your Genesys profile',side:'below',how:'Go to the <b>Genesys Cloud</b> tab and select the <b>Profile</b> icon.',
+  know:'Sign out of all 9-8-8 technology platforms when your shift is complete.',
+  target:()=>inTab('genesys',()=>$('btnProfile')),check:()=>S.g.panel||R.gOut},
+ {title:'Log out of Genesys Cloud',side:'left',anchor:()=>[$('profPanel')],how:'Select <b>Logout</b>.',
+  know:'Logout is at the bottom of the profile panel.',
+  target:()=>[$('btnGLogout')],check:()=>R.gOut},
+ {title:'Exit iCarol',side:'right',how:'Go to the <b>iCarol</b> tab and select <b>Exit</b> on the main menu.',
+  know:'Exit is the last item on the iCarol main menu.',
+  target:()=>inTab('icarol',()=>$('iExit')),check:()=>R.iOut},
+ {title:'Open your portal account menu',side:'below',how:'Go to the <b>Network Portal</b> tab and select your initials in the top banner.',
+  know:'Your initials are at the top right of the portal.',
+  target:()=>inTab('portal',()=>$('btnInitials')),check:()=>S.p.menu||R.pOut},
+ {title:'Sign out of the portal',side:'left',anchor:()=>[$('pMenu')],how:'Select <b>Sign out</b>.',
+  know:'You have now signed out of all three platforms.',
+  target:()=>[$('btnPSignout')],check:()=>R.pOut}
+];
+let T={i:0,advancing:false,done:false};
+function placeRing(){
+  const ring=$('ring');
+  if(mode!=='practice'||T.done||T.advancing||welcome){ ring.hidden=true; return; }
+  const st=STEPS[T.i], els=st.target().filter(el=>el&&el.getClientRects().length); if(!els.length){ring.hidden=true;return;}
+  const ar=$('app').getBoundingClientRect(); let l=1e9,t=1e9,r=-1e9,b=-1e9;
+  els.forEach(el=>{const x=el.getBoundingClientRect(); l=Math.min(l,x.left);t=Math.min(t,x.top);r=Math.max(r,x.right);b=Math.max(b,x.bottom);});
+  ring.style.left=(l-ar.left-5)+'px'; ring.style.top=(t-ar.top-5)+'px'; ring.style.width=(r-l+10)+'px'; ring.style.height=(b-t+10)+'px';
+  ring.hidden=false;
+}
+function tutorCheck(){
+  if(mode!=='practice'||T.done||T.advancing)return;
+  if(STEPS[T.i].check()){
+    T.advancing=true; renderCoach(); placeRing();
+    setTimeout(()=>{ T.i++; T.advancing=false; if(T.i>=STEPS.length)T.done=true; placeRing(); renderCoach(); tutorCheck(); },900);
+  } else renderCoach();
+}
+function after(){ render(); if(mode==='practice')tutorCheck(); else renderCoach(); placeRing(); placeCallout(); }
+
+
+/* ---------- assessment ---------- */
+const CRIT=[
+ {text:'Opened the portal at portal.988.ca and signed in',ok:()=>R.pIn,why:()=>R.portal?'You reached the sign-in page but did not finish signing in.':'The portal was never opened.'},
+ {text:'Signed in to Genesys Cloud and reached the main page',ok:()=>R.gMain,why:()=>hasTab('genesys')||S.g.out?'Genesys Cloud was opened, but you did not reach the main page. Select Microsoft, sign in, then select Collaborate/Communicate.':'Genesys Cloud was never opened from the portal.'},
+ {text:'Allowed Genesys Cloud to use your microphone',ok:()=>S.g.mic==='allow',why:()=>S.g.mic==='deny'?'You selected Block, so callers would not hear you.':'The microphone request was not allowed.'},
+ {text:'Allowed Genesys Cloud to know your location',ok:()=>S.g.loc==='allow',why:()=>S.g.loc==='deny'?'You selected Block on the location request.':'The location request was not allowed.'},
+ {text:'Opened iCarol (9-8-8 only) from the portal',ok:()=>R.iOpen,why:()=>'iCarol was never opened.'},
+ {text:'Logged out of Genesys Cloud',ok:()=>R.gOut,why:()=>'Select the Profile icon, then Logout. Closing the tab is not the same as logging out.'},
+ {text:'Exited iCarol',ok:()=>R.iOut,why:()=>'Select Exit on the iCarol main menu.'},
+ {text:'Signed out of the 9-8-8 portal',ok:()=>R.pOut,why:()=>'Select your initials in the top banner, then Sign out.'}
+];
+const QUIZ=[
+ {q:'Which platform do you use to document interactions?',opts:['Genesys Cloud','iCarol','The 9-8-8 portal','Your email'],a:1,why:'Genesys Cloud is for taking calls and texts and making outbound calls. iCarol is for documenting interactions.'},
+ {q:'What should you do before you navigate to the portal?',opts:['Clear your cookies','Close all other applications and browser tabs','Open iCarol first','Switch to On Queue'],a:1,why:'Open your browser (Chrome is recommended), then close all other applications and browser tabs.'},
+ {q:'You open Genesys Cloud from the portal and another login page appears. What do you select?',opts:['Log In','Forgot Your Password?','Microsoft','Change Organization'],a:2,why:'Select Microsoft, then enter the same credentials you used to log in to the 9-8-8 portal.'},
+ {q:'You reach 9-8-8 contact reports through your own organization\'s iCarol (guest access). How do you log in?',opts:['Select "iCarol - 9-8-8 only" on the portal','Log in as you normally would at your organization','Ask a supervisor for a second password','Through Genesys Cloud'],a:1,why:'With guest access, log in as you normally would at your organization using your existing credentials.'}
+];
+let A={start:0,secs:0,res:[],answers:[]};
+let whyOpen=false, briefOpen=true, lastStep=-1, welcome=true, menuOpen=false;
+function renderCoach(){
+  const co=$('callout'), br=$('brief'), ov=$('overlay');
+  // top strip
+  $('stageLabel').textContent=mode==='practice'?(T.done?'Guided practice complete':'Guided practice, step '+(T.i+1)+' of '+STEPS.length):mode==='assess'?'Scenario assessment':mode==='quiz'?'Knowledge check':'Results';
+  $('prog').style.width=(mode==='practice'?Math.round((T.i+(T.advancing?1:0))/STEPS.length*100):100)+'%';
+  show($('btnSkip'),mode==='practice'&&!T.done); $('btnRestart').textContent=mode==='assess'?'Restart the scenario':'Restart practice';
+  // practice callout
+  show($('menuPop'),menuOpen); $('fab').setAttribute('aria-expanded',menuOpen); show($('welcome'),welcome); show($('fab'),!welcome);
+  if(mode==='practice'&&!T.done&&!welcome){
+    if(lastStep!==T.i){ whyOpen=false; lastStep=T.i; }
+    const st=STEPS[T.i], n=T.advancing?'':(st.nudge?st.nudge():'');
+    const h='<p class="count">Step '+(T.i+1)+' of '+STEPS.length+'</p><h2>'+st.title+'</h2><p>'+st.how+'</p>'+
+      (T.advancing?'<p class="okmsg">Correct.</p>':'')+(n?'<p class="nudge">'+n+'</p>':'')+
+      (T.advancing?'':'<button class="why" data-act="why" aria-expanded="'+whyOpen+'">'+(whyOpen?'Hide the tip':'Show a tip')+'</button>'+(whyOpen?'<div class="know">'+st.know+'</div>':''));
+    if(co.dataset.h!==h){ co.innerHTML=h; co.dataset.h=h; }
+    show(co,true);
+  } else show(co,false);
+  // practice complete overlay
+  const pdone=mode==='practice'&&T.done;
+  if(pdone&&ov.hidden){ ov.innerHTML='<div class="panel"><h2>Practice complete</h2><p>You signed in to the portal, opened Genesys Cloud and iCarol, and signed out of all three.</p><p>Next is a scenario with no highlights. You are scored on what you do, start to finish.</p><div class="row"><button class="btn primary" data-act="assess">Start the scenario</button><button class="btn" data-act="restart">Repeat practice</button></div></div>'; }
+  show(ov,pdone);
+  // assessment brief
+  if(mode==='assess'){
+    const h='<button class="briefhead" data-act="brief" aria-expanded="'+briefOpen+'"><span>Your task</span><span aria-hidden="true">'+(briefOpen?'–':'+')+'</span></button>'+
+      (briefOpen?'<ol><li><b>Start of shift.</b> Open the 9-8-8 portal, then get Genesys Cloud and iCarol (9-8-8 only) open and ready to use.</li><li><b>End of shift.</b> Sign out of all 9-8-8 technology platforms.</li></ol>':'')+
+      '<div class="row"><button class="btn primary" data-act="submit">Submit</button></div>';
+    if(br.dataset.h!==h){ br.innerHTML=h; br.dataset.h=h; }
+    show(br,true);
+  } else show(br,false);
+  placeCallout();
+}
+function placeCallout(){
+  const co=$('callout'); if(co.hidden)return;
+  const st=STEPS[T.i]; let els=(st.anchor?st.anchor():st.target()).filter(el=>el&&el.getClientRects().length);
+  const vw=window.innerWidth, vh=window.innerHeight, w=co.offsetWidth, h=co.offsetHeight, G=16;
+  if(!els.length){ co.style.left=(vw-w)/2+'px'; co.style.top='80px'; return; }
+  let l=1e9,t=1e9,r=-1e9,b=-1e9; els.forEach(el=>{const x=el.getBoundingClientRect(); l=Math.min(l,x.left);t=Math.min(t,x.top);r=Math.max(r,x.right);b=Math.max(b,x.bottom);});
+  const pos={right:[r+G,t],left:[l-w-G,t],below:[l,b+G],above:[l,t-h-G]};
+  const fits=p=>p[0]>=8&&p[0]+w<=vw-8&&p[1]>=8&&p[1]+h<=vh-8;
+  const order=[st.side||'below','below','right','left','above'];
+  let p=pos[order.find(s=>fits(pos[s]))||order[0]];
+  if(!fits(p)){ const s=order[0]; p=pos[s].slice(); }
+  co.style.left=Math.max(8,Math.min(p[0],vw-w-8))+'px'; co.style.top=Math.max(8,Math.min(p[1],vh-h-8))+'px';
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b){ act(b.dataset.act); return; } if(menuOpen&&!e.target.closest('#menuPop')){ menuOpen=false; renderCoach(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&menuOpen){ menuOpen=false; renderCoach(); $('fab').focus(); } });
+
+function setStage(m){
+  mode=m; show($('simView'),m==='practice'||m==='assess'); show($('cardView'),m==='quiz'||m==='results');
+}
+let qi=0;
+function act(a){
+  if(a==='home'){ if(window.parent!==window){ window.parent.postMessage('sim-home','*'); } else { window.location.href='index.html'; } return; }
+  if(a==='menu'){ menuOpen=!menuOpen; renderCoach(); return; }
+  menuOpen=false;
+  if(a==='begin'){ welcome=false; after(); }
+  else if(a==='why'){ whyOpen=!whyOpen; renderCoach(); }
+  else if(a==='brief'){ briefOpen=!briefOpen; renderCoach(); }
+  else if(a==='full'){ renderCoach(); try{ const d=document.documentElement; (document.fullscreenElement?document.exitFullscreen():d.requestFullscreen()).catch(()=>toast('Full screen is not available here. Open the file in a browser tab.')); }catch(_){ toast('Full screen is not available here. Open the file in a browser tab.'); } }
+  else if(a==='restartAny'){ act(mode==='assess'?'resetAssess':'restart'); return; }
+  else if(a==='restart'){ mode='practice'; reset(); T={i:0,advancing:false,done:false}; lastStep=-1; setStage('practice'); after(); }
+  else if(a==='assess'||a==='resetAssess'){ welcome=false; mode='assess'; reset(); briefOpen=true; A={start:Date.now(),secs:0,res:[],answers:QUIZ.map(()=>-1)}; setStage('assess'); after(); }
+  else if(a==='submit'){ A.secs=Math.round((Date.now()-A.start)/1000); A.res=CRIT.map(c=>({ok:!!c.ok(),why:c.why()})); qi=0; setStage('quiz'); renderCoach(); placeRing(); renderQuiz(); }
+  else if(a==='next'){ const r=document.querySelector('input[name=q]:checked'); if(!r){ return; } A.answers[qi]=+r.value; qi++; if(qi<QUIZ.length)renderQuiz(); else { setStage('results'); renderCoach(); renderResults(); } }
+}
+function renderQuiz(){
+  const x=QUIZ[qi];
+  $('cardView').innerHTML='<div class="panel wide"><p class="count">Knowledge check, question '+(qi+1)+' of '+QUIZ.length+'</p>'+
+    '<form id="quizForm"><fieldset><legend>'+esc(x.q)+'</legend>'+x.opts.map((o,j)=>'<label for="qo'+j+'"><input type="radio" id="qo'+j+'" name="q" value="'+j+'"><span>'+esc(o)+'</span></label>').join('')+'</fieldset></form>'+
+    '<div class="row"><button class="btn primary" data-act="next" id="btnNext" disabled>'+(qi===QUIZ.length-1?'See my results':'Next question')+'</button></div></div>';
+  $('quizForm').addEventListener('submit',e=>e.preventDefault());
+  $('quizForm').addEventListener('change',()=>{$('btnNext').disabled=false;});
+  const f=$('cardView').querySelector('input'); if(f)f.focus();
+}
+function renderResults(){
+  const tp=A.res.filter(r=>r.ok).length, qp=QUIZ.filter((x,i)=>A.answers[i]===x.a).length, total=CRIT.length+QUIZ.length, pct=Math.round((tp+qp)/total*100);
+  $('cardView').innerHTML='<div class="panel wide"><h2>Your results</h2>'+
+    '<div class="score"><strong>'+pct+'%</strong><span>Scenario: '+tp+' of '+CRIT.length+'</span><span>Knowledge check: '+qp+' of '+QUIZ.length+'</span><span>Time on scenario: '+mmss(A.secs)+'</span></div>'+
+    '<h3>Scenario</h3><ul class="res">'+CRIT.map((c,i)=>{ const r=A.res[i]; return '<li><span class="pill '+(r.ok?'ok':'no')+'">'+(r.ok?'Met':'Not met')+'</span><div>'+esc(c.text)+(r.ok?'':'<small>'+esc(r.why)+'</small>')+'</div></li>'; }).join('')+'</ul>'+
+    '<h3>Knowledge check</h3><ul class="res">'+QUIZ.map((x,i)=>{ const ok=A.answers[i]===x.a;
+      return '<li><span class="pill '+(ok?'ok':'no')+'">'+(ok?'Correct':'Not yet')+'</span><div>'+esc(x.q)+'<small>'+(ok?'':'You chose: '+esc(x.opts[A.answers[i]])+'. Correct answer: '+esc(x.opts[x.a])+'. ')+esc(x.why)+'</small></div></li>'; }).join('')+'</ul>'+
+    '<div class="row"><button class="btn primary" data-act="assess">Retry the scenario</button><button class="btn" data-act="restart">Back to guided practice</button><button class="btn" data-act="home">All simulations</button></div></div>';
+  $('cardView').scrollTop=0;
+}
+
+
+reset(); setStage('practice'); render(); renderCoach(); placeRing();
+window.addEventListener('resize',()=>{placeRing();placeCallout();}); $('page').addEventListener('scroll',()=>{placeRing();placeCallout();});
+window.__sim={get S(){return S;},get R(){return R;},get T(){return T;}};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Making Outbound Calls Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* 9-8-8 brand layer (yellow, blue, green; Roboto headings, Lora body) wraps a neutral mock of the phone system.
+   Layout: full-viewport app; instructions float beside the control they describe. Single light theme by choice. */
+:root{
+  --yellow:#FDDA64; --blue:#B8D8EB; --green:#1d1d1b; --ink:#1d1d1b; --paper:#ffffff; --hair:#dcdcd6; --soft:#5a5a55; --blue-tint:#f0f6fa; --page:#f6f6f3; --good:#235B4E; --bad:#a3271d;
+  --app-bg:#ededf5; --app-surface:#ffffff; --app-line:#d6d6e3; --app-ink:#22222d; --app-muted:#676778;
+  --app-accent:#2a5fc4; --app-soft:#e6e9f8; --go:#2fa84f; --stop:#dc2626;
+  --head:"Roboto","Helvetica Neue",Arial,sans-serif; --body:"Lora",Georgia,"Times New Roman",serif;
+  --ui:system-ui,-apple-system,"Segoe UI",Arial,sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--app-bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;display:flex;flex-direction:column;min-height:560px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer} button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+[hidden]{display:none!important}
+svg.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+/* mock app, edge to edge */
+.sim{flex:1;min-height:0;display:flex}
+.app{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;background:var(--app-surface);color:var(--app-ink);font-family:var(--ui);font-size:15px}
+.appscroll{flex:1;overflow:auto;display:flex}
+.appinner{flex:1;min-width:900px;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--app-line)}
+.topbar .menu{border:1px solid var(--app-accent);color:var(--app-accent);background:var(--app-surface);border-radius:6px;padding:5px 12px;font-size:14px}
+.topbar .search{flex:0 1 340px;border:1px solid var(--app-line);border-radius:6px;padding:7px 12px;font-size:14px;color:var(--app-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .sp{flex:1}
+.ib{border:1px solid transparent;background:var(--app-soft);border-radius:8px;width:40px;height:40px;display:inline-grid;place-items:center;color:var(--app-ink);padding:0}
+.ib:hover:not(:disabled){border-color:var(--app-accent)}
+.ib.on{background:var(--app-accent);color:#fff}
+.ib:disabled{opacity:.45}
+.ib.end{background:var(--stop);color:#fff}
+.ib.dot{position:relative}
+.ib.dot::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--stop);border:2px solid var(--app-surface)}
+.onq{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:#1f3f8f;background:var(--app-soft);border-radius:8px;padding:9px 12px}
+.onq i{width:32px;height:17px;border-radius:99px;background:#1f3f8f;position:relative;display:block}
+.onq i::after{content:"";position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--app-line);display:grid;place-items:center;color:var(--app-muted)}
+.profile{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--app-bg)}
+.profile .big{width:120px;height:120px;border-radius:50%;background:var(--app-line);display:grid;place-items:center;color:var(--app-muted)}
+.profile .big svg{width:64px;height:64px}
+.profile b{font-size:26px;font-weight:400}
+.profile small{color:var(--app-muted);font-size:14px}
+.profile .st{color:var(--app-accent);font-weight:700;font-size:13px}
+.ws{flex:1;display:grid;grid-template-columns:270px minmax(0,1fr) auto;position:relative;min-height:0}
+.conv{border-right:1px solid var(--app-line);padding:14px;display:flex;flex-direction:column;gap:12px}
+.convhead{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15px}
+.convhead span{flex:1}
+.convhead .ib{width:34px;height:34px}
+.convhead svg.ic{width:17px;height:17px}
+.convempty{color:var(--app-muted);font-size:14px;text-align:center;margin-top:48px}
+.convcard{border:2px solid var(--app-accent);border-radius:8px;padding:10px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.convcard div{background:var(--app-soft);border-radius:6px;padding:8px 10px}
+.convcard small{display:block;color:var(--app-muted)}
+.main{background:var(--app-bg);min-width:0;display:flex;flex-direction:column}
+.waiting{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--app-muted);text-align:center;padding:24px}
+.waiting b{font-size:22px;font-weight:400;color:var(--app-ink)}
+.callhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 16px;background:var(--app-surface);border-bottom:1px solid var(--app-line)}
+.callhead .who{display:flex;align-items:center;gap:10px;margin-right:10px}
+.callhead .who b{display:block;font-size:15px;line-height:1.2}
+.callhead .who small{font-family:var(--mono);font-size:12.5px;color:var(--app-muted)}
+.callhead .grp{display:flex;gap:6px}
+.callhead .sp{flex:1}
+.badge{font-size:13px;font-weight:700;border-radius:99px;padding:3px 11px;background:var(--app-soft);color:#1f3f8f}
+.script{margin:18px;background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:18px;max-width:760px}
+.script h3{margin:0 0 10px;font-size:17px}
+.script dl{margin:0;display:grid;grid-template-columns:150px 1fr;gap:8px 12px;font-size:14.5px}
+.script dt{font-weight:700} .script dd{margin:0}
+.script .links{display:flex;flex-direction:column;gap:8px}
+.script .links button{border:1px solid var(--app-line);background:var(--app-bg);border-radius:6px;padding:8px 10px;font-size:13.5px;text-align:left}
+.event{margin:0 18px 18px;max-width:760px;border-left:4px solid var(--app-accent);background:var(--app-surface);border-radius:0 8px 8px 0;padding:12px 14px;font-size:15px}
+.event b{display:block;font-size:13px;color:var(--app-muted)}
+.acw{width:310px;border-left:1px solid var(--app-line);background:var(--app-surface);display:flex;flex-direction:column}
+.acw header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--app-line);font-weight:700}
+.acw .timer{display:flex;justify-content:space-between;padding:10px 14px;font-size:14px}
+.acw .timer span{font-family:var(--mono);color:var(--stop)}
+.acw input{margin:0 14px 8px;border:1px solid var(--app-line);border-radius:6px;padding:8px 10px;font-size:14px;background:var(--app-surface);width:calc(100% - 28px)}
+.codes{list-style:none;margin:0;padding:0 8px;flex:1}
+.codes button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 8px;border-radius:6px;font-size:14px;line-height:1.35}
+.codes button:hover{background:var(--app-bg)}
+.codes button.sel{background:var(--app-soft);font-weight:700}
+.acw footer{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--app-line);font-size:12.5px;color:var(--app-muted)}
+.acw footer div{flex:1;min-width:0}
+.acw footer b{display:block;color:var(--app-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.done{border:0;border-radius:6px;background:var(--app-accent);color:#fff;font-weight:700;padding:9px 16px;font-size:14px}
+.done:disabled{opacity:.4}
+.mc{position:absolute;left:190px;top:58px;width:330px;z-index:12;background:var(--app-surface);border:1px solid var(--app-line);border-radius:8px;padding:20px;box-shadow:0 14px 30px -12px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:12px}
+.mc h3{margin:0;font-size:19px;font-weight:400}
+.field{position:relative}
+.field input{width:100%;border:1px solid var(--app-line);border-radius:6px;padding:10px 12px;font-size:14.5px;background:var(--app-surface)}
+.field input:focus{outline:2px solid var(--app-accent);outline-offset:0}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--app-line);border-radius:6px;padding:9px 12px;font-size:14.5px}
+.chip span{flex:1}
+.chip button{border:0;background:none;font-size:18px;line-height:1;padding:0 4px;color:var(--app-muted)}
+.results{position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:14;background:var(--app-surface);border:1px solid var(--app-line);border-radius:6px;box-shadow:0 10px 22px -10px rgba(0,0,0,.4);padding:6px;font-size:14px}
+.results .lbl{font-weight:700;padding:4px 6px;font-size:13px}
+.results button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px;border-radius:5px}
+.results button:hover{background:var(--app-soft)}
+.results button small{display:block;color:var(--app-muted)}
+.results.tall{min-height:170px;color:var(--app-muted)} .results.tall p{margin:6px}
+.dialwrap{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0 2px}
+.dial{width:72px;height:72px;border-radius:50%;border:0;background:var(--app-line);color:#fff;display:grid;place-items:center}
+.dial svg{width:32px;height:32px}
+.dial:not(:disabled){background:var(--go)}
+.dialwrap span{font-size:13px;color:var(--app-accent)}
+.toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:var(--paper);color:var(--ink);border:1px solid var(--hair);border-left:5px solid var(--blue);box-shadow:0 12px 32px -12px rgba(0,0,0,.35);padding:10px 16px;border-radius:8px;font-size:14.5px;z-index:30;max-width:90%;text-align:center;font-family:var(--head)}
+.ring{position:absolute;z-index:25;pointer-events:none;border:2px solid var(--green);border-radius:10px;box-shadow:0 0 0 4px rgba(253,218,100,.75);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(253,218,100,.3)}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}}
+
+/* training layer */
+.tag{font-family:var(--head);font-size:14px;font-weight:500;margin:0;display:flex;align-items:center;gap:8px;color:var(--soft)}
+.tag span{background:var(--yellow);color:var(--ink);font-weight:900;border-radius:99px;padding:4px 10px;line-height:1}
+.panel.welcome{max-width:560px}
+.plan{list-style:none;margin:0;padding:0;counter-reset:pl;display:flex;flex-direction:column;gap:12px;font-size:16px}
+.plan li{counter-increment:pl;display:grid;grid-template-columns:34px 1fr;column-gap:12px}
+.plan li::before{content:counter(pl);grid-row:span 2;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);font-family:var(--head);font-weight:700;display:grid;place-items:center}
+.plan b{font-family:var(--head)}
+.plan span{color:#44443f}
+.fab{position:fixed;left:16px;bottom:16px;z-index:45;width:52px;height:52px;border-radius:50%;border:1.5px solid var(--ink);background:var(--yellow);color:var(--ink);display:grid;place-items:center;box-shadow:0 8px 20px -8px rgba(0,0,0,.45)}
+.fab:hover{background:#ffe588}
+.tmenu{position:fixed;left:16px;bottom:78px;z-index:46;width:290px;max-width:calc(100vw - 32px);background:var(--paper);border:1px solid var(--hair);border-radius:10px;padding:16px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px}
+.tmenu h2{font-family:var(--head);font-size:19px;margin:0}
+.tmenu .stage{margin:4px 0 0;font-family:var(--head);font-size:14px;color:var(--soft)}
+.tmenu .track{display:block;height:6px;border-radius:99px;background:var(--hair);overflow:hidden}
+.tmenu .track i{display:block;height:100%;background:var(--ink);transition:width .3s}
+.mitems{display:flex;flex-direction:column;margin:6px -8px -6px;border-top:1px solid var(--hair);padding-top:6px}
+.mitems button{border:0;background:none;text-align:left;font-family:var(--head);font-size:15px;font-weight:500;padding:9px 8px;border-radius:6px}
+.mitems button:hover{background:var(--page)}
+.callout{position:fixed;z-index:40;width:310px;max-width:calc(100vw - 16px);background:var(--paper);color:var(--ink);border:1px solid var(--hair);border-left:5px solid var(--yellow);border-radius:10px;padding:16px 18px 16px 16px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px;transition:left .25s,top .25s}
+@media (prefers-reduced-motion:reduce){.callout{transition:none}}
+.callout p,.brief p{margin:0}
+.count{font-family:var(--head);font-size:13.5px;font-weight:500;margin:0;color:var(--soft)}
+.callout h2,.panel h2,.brief h2{font-family:var(--head);font-weight:700;margin:0;text-wrap:balance}
+.callout h2{font-size:19px;line-height:1.2}
+.code{font-family:var(--mono);font-size:.88em;background:var(--blue-tint);border:1px solid var(--blue);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.why{align-self:flex-start;border:0;background:none;padding:0;font-family:var(--head);font-size:14px;font-weight:500;text-decoration:underline;color:var(--green)}
+.know{border-top:1px solid var(--hair);padding-top:10px;font-size:15px;color:#33332f}
+.know ol{margin:4px 0 0;padding-left:22px}
+.nudge{background:#fbf0ee;border-left:3px solid var(--bad);color:var(--bad);padding:8px 10px;font-size:15px}
+.okmsg{font-family:var(--head);font-weight:700;color:var(--good)}
+.okmsg::before{content:"✓ "}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font-family:var(--head);border:1.5px solid var(--green);background:var(--paper);color:var(--green);border-radius:8px;padding:9px 16px;font-weight:700;font-size:15px}
+.btn.primary{background:var(--green);color:#fff}
+.btn:disabled{opacity:.4}
+.brief{position:fixed;left:16px;bottom:80px;z-index:40;width:330px;max-width:calc(100vw - 28px);background:var(--paper);border:1px solid var(--hair);border-left:5px solid var(--yellow);border-radius:10px;padding:12px 16px 14px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
+.briefhead{display:flex;justify-content:space-between;border:0;background:none;padding:0;font-family:var(--head);font-weight:700;font-size:17px;text-align:left}
+.brief ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(29,29,27,.35);display:grid;place-items:center;padding:16px}
+.panel{background:var(--paper);border:1px solid var(--hair);border-top:5px solid var(--yellow);border-radius:12px;box-shadow:0 18px 44px -18px rgba(0,0,0,.4);padding:32px;max-width:520px;display:flex;flex-direction:column;gap:16px;font-size:17px}
+.panel p{margin:0}
+.panel h2{font-size:28px}
+.cards{flex:1;min-height:0;overflow:auto;background:var(--page);display:flex;justify-content:center;align-items:flex-start;padding:32px 16px}
+.cards .panel{max-width:720px;width:100%;border-top-color:var(--blue)}
+fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+legend{font-family:var(--head);font-weight:700;font-size:24px;line-height:1.25;padding:0;margin-bottom:14px;text-wrap:balance}
+fieldset label{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1.5px solid var(--hair);border-radius:10px;cursor:pointer}
+fieldset label:hover{border-color:var(--green)}
+fieldset label:has(input:checked){border-color:var(--ink);background:var(--blue-tint);box-shadow:inset 4px 0 0 var(--blue)}
+fieldset input{margin-top:5px;accent-color:var(--green)}
+.score{display:flex;flex-wrap:wrap;gap:20px;align-items:baseline;font-family:var(--head);font-variant-numeric:tabular-nums}
+.score strong{font-size:52px;line-height:1;font-weight:900;box-shadow:inset 0 -10px 0 var(--yellow)}
+.panel h3{font-family:var(--head);font-size:18px;margin:6px 0 0}
+.res{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:16px}
+.res li{display:grid;grid-template-columns:84px 1fr;gap:12px;border:1px solid var(--hair);border-radius:8px;padding:10px 12px;align-items:start}
+.res small{display:block;color:#4d4d4a;font-size:15px;margin-top:2px}
+.pill{font-family:var(--head);font-size:12.5px;font-weight:700;text-align:center;border-radius:99px;padding:4px 8px;white-space:nowrap}
+.pill{border:1px solid currentColor;background:none}
+.pill.ok{color:var(--good);background:#eaf3f0}
+.pill.no{color:var(--bad);background:#fbf0ee}
+
+/* closer layouts (still neutral: no vendor logos or brand artwork) */
+.gprof{position:relative;background:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 0 34px;border-bottom:1px solid var(--app-line)}
+.gprof .vpp{position:absolute;left:16px;top:14px;border:0;background:var(--app-soft);border-radius:4px;padding:6px 12px;font-size:12px;font-weight:700}
+.gprof .big{width:104px;height:104px;border-radius:50%;background:#b9b9bf;border:4px solid var(--st);display:grid;place-items:center;color:#fff}
+.gprof .big svg{width:60px;height:60px}
+.gprof .st{color:var(--st);font-weight:700;font-size:11.5px}
+.gprof b{font-size:25px;font-weight:300}
+.gprof small{font-size:13px}
+.gprof em{color:var(--app-muted);font-size:13px;font-style:normal;margin-top:6px}
+.gprof .mailb{position:absolute;bottom:-24px;width:48px;height:48px;border-radius:50%;background:var(--app-accent);color:#fff;display:grid;place-items:center}
+.gbelow{flex:1;background:var(--app-bg);display:flex;flex-direction:column;align-items:center;gap:22px;padding:44px 16px 24px}
+.addsec{border:0;background:#dfe1ee;border-radius:4px;padding:7px 14px;font-size:12px;font-weight:700}
+.gcards{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:640px;max-width:100%}
+.gcards>div{background:#fff;padding:16px 18px;font-size:13px;min-height:130px}
+.gcards h4{margin:0 0 12px;font-size:16px;font-weight:400;color:var(--app-muted)}
+.gcards p{margin:0 0 10px}
+.tabsx{display:flex;gap:28px;font-size:12px;border-bottom:1px solid var(--app-line);padding-bottom:6px}
+.tabsx span,.lk{color:var(--app-accent)}
+.pwrapv{flex:1;display:flex;flex-direction:column}
+
+.app{--st:#2a8fd6}
+.avatar{border:3px solid var(--st)}
+.emg{margin:0;font-size:13px;color:var(--app-ink)}
+.cch{display:flex;justify-content:space-between;margin:0;font-size:14px}
+.srch{background-image:radial-gradient(circle at 15px 50%,transparent 4px,var(--app-muted) 4.500px,var(--app-muted) 5.500px,transparent 6px);padding-left:34px!important}
+.chip{padding-left:34px;background-image:radial-gradient(circle at 15px 50%,transparent 4px,var(--app-muted) 4.500px,var(--app-muted) 5.500px,transparent 6px)}
+.chip span{background:#eef0f4;border:1px solid var(--app-line);border-radius:4px;padding:2px 8px;font-size:13px}
+.cibar{display:flex;justify-content:space-between;padding:10px 18px;background:#f7f7fa;border-bottom:1px solid var(--app-line);font-size:14.5px;color:var(--app-ink)}
+.script{grid-template-columns:minmax(0,1fr) 200px;background:transparent;border:0;padding:0;margin:18px 22px;max-width:640px}
+.shero{background:#B8D8EB;height:96px;display:flex;align-items:center;padding:0 18px}
+.shero span{width:66px;height:66px;border-radius:50%;background:#FDDA64;display:grid;place-items:center;font-weight:900;font-size:19px;color:#1d1d1b}
+.script h3{background:#FDDA64;margin:8px 0;padding:5px 10px;font-size:19px;color:#1d1d1b}
+.script dl{background:#f3eef0;padding:18px 20px;grid-template-columns:190px 1fr;gap:16px 10px;font-size:13.5px}
+.script .links button{border:1px solid #c9c9d2;background:#ececf0;color:#8b8b98;border-radius:2px;padding:8px 10px;font-size:13.5px}
+.script .links .t{background:#5aa9c2;border-color:#5aa9c2;color:#fff}
+.script .links .g{background:#49c060;border-color:#49c060;color:#fff}
+.script .links .r{background:#c62828;border-color:#c62828;color:#fff}
+.event{margin:0 22px 18px;max-width:640px}
+.codes button{color:#2d4f9e}
+.acw .timer span{color:var(--stop)}
+
+/* ---- training layer, revised look: rounded cards, yellow step chip and highlighter headings in place of edge bars ---- */
+.callout{border:1px solid var(--hair);border-radius:16px;padding:18px 20px;box-shadow:0 16px 40px -14px rgba(0,0,0,.42)}
+.callout .count{align-self:flex-start;background:var(--yellow);color:var(--ink);border-radius:99px;padding:3px 12px;font-size:12.5px;font-weight:700}
+.brief{border:1px solid var(--hair);border-radius:16px;padding:14px 18px 16px}
+.briefhead span:first-child,.tmenu h2,.panel h2{background-image:linear-gradient(transparent 62%,var(--yellow) 62%);padding:0 4px;margin-left:-4px}
+.panel h2{align-self:flex-start}
+.panel{border:1px solid var(--hair);border-radius:18px}
+.cards .panel{border-top-color:var(--hair)}
+.tmenu{border-radius:16px}
+.fab{border-radius:16px;border:0;background:var(--ink);color:var(--yellow)}
+.fab:hover{background:#34342f}
+.btn{border-radius:99px;padding:9px 20px}
+.ring{border-radius:12px}
+.toast{background:var(--ink);color:#fff;border:0;border-radius:12px}
+.plan li::before{border:0;background:var(--yellow)}
+.score strong{box-shadow:none;background-image:linear-gradient(transparent 62%,var(--yellow) 62%);padding:0 6px}
+.mitems a,.mitems button{display:block;text-decoration:none;color:var(--ink)}
+fieldset label{border-radius:14px}
+.res li{border-radius:12px}
+</style>
+</head>
+<body>
+<section class="sim" id="simView">
+    <div class="app" id="app">
+      <div class="appscroll" id="appscroll"><div class="appinner">
+      <div class="topbar">
+        <button class="menu" data-inert>≡ Menu</button>
+        <span class="search">Search for pages, users, groups and locations</span>
+        <span class="sp"></span>
+        <button class="ib" data-inert title="Help" aria-label="Help"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.500"/><path d="M8 8a2 2 0 1 1 3 1.700c-.7.4-1 .8-1 1.600M10 14v.2"/></svg></button>
+        <button class="ib" data-inert title="Calls" aria-label="Calls"><svg class="ic" viewBox="0 0 20 20"><use href="#i-phone"/></svg></button>
+        <button class="ib" data-inert title="Chat" aria-label="Chat"><svg class="ic" viewBox="0 0 20 20"><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg></button>
+        <button class="ib" data-inert title="Inbox" aria-label="Inbox"><svg class="ic" viewBox="0 0 20 20"><path d="M3 11l2-7h10l2 7v5H3zM3 11h4l1 2h4l1-2h4"/></svg></button>
+        <button class="ib" id="btnWorkspace" title="Agent Workspace" aria-label="Agent Workspace"><svg class="ic" viewBox="0 0 20 20"><circle cx="8" cy="7" r="3"/><path d="M2.500 17c.5-3.500 2.800-5 5.500-5s5 1.500 5.500 5M14.500 5a3.500 3.500 0 0 1 0 4.500M16.500 3.500a6 6 0 0 1 0 7.500"/></svg></button>
+        <span class="onq">On Queue <i></i></span>
+        <span class="avatar" aria-hidden="true"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg></span>
+      </div>
+
+      <div class="pwrapv" id="viewProfile"><div class="gprof"><button class="vpp" data-inert>View Public Profile</button>
+        <span class="big"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="7.500" r="3"/><path d="M4 17c.6-3.500 3-5 6-5s5.400 1.500 6 5"/></svg></span><span class="st">On Queue</span><b>Training User</b><small>988 Hub Responder</small><em>What's on your mind?</em>
+        <span class="mailb"><svg class="ic" viewBox="0 0 20 20"><path d="M3 5h14v10H3zM3 6l7 5 7-5"/></svg></span></div>
+      <div class="gbelow"><button class="addsec" data-inert>+ Add New Section</button>
+        <div class="gcards"><div><h4>Groups</h4><p class="tabsx"><u>Official</u><span>Social</span><span>Owned</span></p><p>988 - Agents</p></div><div><h4>Contact Information</h4><p><small>Main Email</small><br><span class="lk">traininguser@988.ca</span></p><p><small>Work Email</small><br><span class="lk">traininguser@988.ca</span></p></div></div></div></div>
+
+      <div class="ws" id="viewWorkspace" hidden>
+        <div class="conv">
+          <div class="convhead"><span>Conversations</span>
+            <button class="ib" data-inert title="Settings" aria-label="Settings"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="10" r="2.500"/><circle cx="10" cy="10" r="6.500" stroke-dasharray="3 2.200"/></svg></button>
+            <button class="ib" id="btnNewCall" title="Start a New Call" aria-label="Start a New Call"><svg class="ic" viewBox="0 0 20 20"><use href="#i-phone"/></svg></button>
+            <button class="ib" data-inert title="Start a new email" aria-label="Start a new email"><svg class="ic" viewBox="0 0 20 20"><path d="M3 5h14v10H3zM3 6l7 5 7-5"/></svg></button>
+            <button class="ib" data-inert title="Start a new message" aria-label="Start a new message"><svg class="ic" viewBox="0 0 20 20"><path d="M3 4h14v9H8l-4 3v-3H3zM7 8.500h.1M10 8.500h.1M13 8.500h.1"/></svg></button>
+          </div>
+          <p class="convempty" id="convEmpty">Start new<br>outbound conversations</p>
+          <div class="convcard" id="convCard" hidden><p class="cch"><b id="ccPlace"></b><span>+</span></p><div><span id="ccQueue"></span><small id="ccStatus"></small></div></div>
+        </div>
+
+        <div class="main">
+          <div class="waiting" id="waiting"><b>You're waiting on queue</b><span>to handle assigned incoming conversations.</span></div>
+          <div id="callPane" hidden>
+            <div class="callhead">
+              <div class="who"><svg class="ic" viewBox="0 0 20 20" style="width:24px;height:24px"><use href="#i-phone"/></svg><div><b id="chPlace"></b><small id="chTimer">0:00</small></div></div>
+              <div class="grp">
+                <button class="ib" id="btnPad" data-inert title="Dialpad" aria-label="Dialpad"><svg class="ic" viewBox="0 0 20 20" stroke-width="2.400"><path d="M5 5h.1M10 5h.1M15 5h.1M5 10h.1M10 10h.1M15 10h.1M5 15h.1M10 15h.1M15 15h.1"/></svg></button>
+                <button class="ib" id="btnMute" title="Mute" aria-label="Mute" aria-pressed="false"><svg class="ic" viewBox="0 0 20 20"><rect x="7.500" y="3" width="5" height="9" rx="2.500"/><path d="M5 10a5 5 0 0 0 10 0M10 15v2.500"/></svg></button>
+                <button class="ib" id="btnHold" title="Hold" aria-label="Hold" aria-pressed="false"><svg class="ic" viewBox="0 0 20 20" stroke-width="2"><path d="M7.500 5v10M12.500 5v10"/></svg></button>
+              </div>
+              <div class="grp">
+                <button class="ib" id="btnTransfer" title="Transfer" aria-label="Transfer"><svg class="ic" viewBox="0 0 20 20"><path d="M4 7h12l-3-3M16 13H4l3 3"/></svg></button>
+                <button class="ib" id="btnConsult" data-inert title="Consult" aria-label="Consult"><svg class="ic" viewBox="0 0 20 20"><circle cx="7" cy="8" r="2.500"/><circle cx="13.500" cy="8" r="2.500"/><path d="M2.500 16c.4-2.500 2-4 4.500-4M17.500 16c-.4-2.500-2-4-4.500-4"/></svg></button>
+                <button class="ib" id="btnConf" data-inert title="Conference" aria-label="Conference"><svg class="ic" viewBox="0 0 20 20"><circle cx="10" cy="6.500" r="2.300"/><circle cx="4.800" cy="9" r="1.800"/><circle cx="15.200" cy="9" r="1.800"/><path d="M5.500 16c.5-3 2.200-4.300 4.500-4.300s4 1.300 4.500 4.300M2 14.500c.3-1.500 1.200-2.400 2.500-2.700M18 14.500c-.3-1.500-1.200-2.400-2.500-2.700"/></svg></button>
+              </div>
+              <button class="ib end" id="btnEnd" title="End the call" aria-label="End the call"><svg class="ic" viewBox="0 0 20 20"><use href="#i-phone"/><path d="M4 16L16 4"/></svg></button>
+              <span class="badge" id="chBadge"></span>
+              <span class="sp"></span>
+              <button class="ib" id="btnAcw" title="After Call Work" aria-label="After Call Work"><svg class="ic" viewBox="0 0 20 20"><rect x="4.500" y="4" width="11" height="13" rx="1.500"/><path d="M7.500 4V2.800h5V4M7.500 11l2 2 3.500-4"/></svg></button>
+            </div>
+            <div class="cibar"><span>☎ Call Interaction</span><span>«</span></div>
+            <div class="script">
+              <div><div class="shero"><span>9-8-8</span></div><h3>Interaction Details</h3>
+                <dl><dt>Caller / Texter Selections:</dt><dd></dd><dt>Interaction Type:</dt><dd>Call</dd><dt>Interaction State:</dt><dd id="sdState"></dd><dt>Queue Name:</dt><dd id="sdQueue"></dd><dt>Caller / Texter Number:</dt><dd id="sdNum"></dd><dt>Sending Telco:</dt><dd></dd></dl></div>
+              <div class="links"><button class="t" data-inert>Interaction Details</button><button class="t" data-inert>Open iCarol</button><button class="g" data-inert>9-8-8 Resource Map</button><button data-inert>Caller History</button><button data-inert>Instructions when communicating</button><button data-inert>Instructions for Assistance</button><button class="r" data-inert>Emergency Services Information</button></div>
+            </div>
+            <div class="event" id="event" hidden><b>On the call</b><span id="eventText"></span></div>
+          </div>
+        </div>
+
+        <aside class="acw" id="acwPane" hidden aria-label="Wrap-up codes">
+          <header><svg class="ic" viewBox="0 0 20 20"><rect x="4.500" y="4" width="11" height="13" rx="1.500"/><path d="M7.500 4V2.800h5V4M7.500 11l2 2 3.500-4"/></svg>Wrap-up Codes</header>
+          <div class="timer">After Call Work <span id="acwTimer">05:00</span></div>
+          <input id="wInput" type="text" placeholder="Find wrap-up code" aria-label="Find wrap-up code" autocomplete="off">
+          <ul class="codes" id="codes"></ul>
+          <footer><div id="acwStatus"></div><button class="done" id="btnDone" disabled>Done</button></footer>
+        </aside>
+
+        <div class="mc" id="makeCall" hidden role="dialog" aria-label="Make Call">
+          <h3>Make Call</h3>
+          <div class="field">
+            <div id="qInputWrap"><input id="qInput" class="srch" type="text" placeholder="On behalf of queue" aria-label="On behalf of queue" autocomplete="off"></div>
+            <div class="chip" id="qChip" hidden><span id="qChipText"></span><button id="qClear" aria-label="Clear queue" title="Clear queue">×</button></div>
+            <div class="results" id="qResults" hidden></div>
+          </div>
+          <div class="field">
+            <input id="nInput" class="srch" type="text" inputmode="tel" placeholder="Enter a number or contact" aria-label="Enter a number or contact" autocomplete="off">
+            <div class="results tall" id="nResults" hidden><p>Searching contacts for <b id="nEcho"></b></p><p>No matching contacts.</p></div>
+          </div>
+          <div class="dialwrap"><button class="dial" id="btnDial" disabled title="Call" aria-label="Call"><svg class="ic" viewBox="0 0 20 20"><use href="#i-phone"/></svg></button><span>Open dialpad</span></div><p class="emg"><b>Emergency Address</b> ✎<br>⚠ Primary number not found.</p>
+        </div>
+      </div>
+      </div></div>
+      <div class="ring" id="ring" hidden></div>
+      <div class="toast" id="toast" role="status" hidden></div>
+    </div>
+</section>
+<section class="cards" id="cardView" hidden></section>
+<div class="callout" id="callout" role="region" aria-label="Practice step" aria-live="polite" hidden></div>
+<aside class="brief" id="brief" aria-label="Scenario task" hidden></aside>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Practice complete" hidden></div>
+<div class="overlay" id="welcome" role="dialog" aria-modal="true" aria-labelledby="welTitle">
+  <div class="panel welcome">
+    <p class="tag"><span>9-8-8</span> Technology Training</p>
+    <h2 id="welTitle">Making outbound calls</h2>
+    <p>Practise placing an outbound call in a copy of the phone system. Nothing here is live, and the phone numbers are fictional.</p>
+    <ol class="plan">
+      <li><b>Guided practice</b><span>Eleven steps, each one highlighted on the screen.</span></li>
+      <li><b>Scenario</b><span>One call on your own, with no highlights.</span></li>
+      <li><b>Knowledge check</b><span>Four short questions, then your results.</span></li>
+    </ol>
+    <div class="row"><button class="btn primary" data-act="begin" id="btnBegin">Start practice</button><button class="btn" data-act="assess">Go straight to the scenario</button></div>
+  </div>
+</div>
+<button class="fab" id="fab" data-act="menu" aria-haspopup="true" aria-expanded="false" aria-controls="menuPop" aria-label="Training menu" title="Training menu"><svg class="ic" viewBox="0 0 20 20" stroke-width="2"><path d="M4 6h12M4 10h12M4 14h12"/></svg></button>
+<div class="tmenu" id="menuPop" hidden>
+  <p class="tag"><span>9-8-8</span> Technology Training</p>
+  <h2>Making outbound calls</h2>
+  <p class="stage" aria-live="polite" id="stageLabel"></p>
+  <span class="track" aria-hidden="true"><i id="prog"></i></span>
+  <div class="mitems">
+    <button data-act="home">All simulations</button>
+    <button id="btnSkip" data-act="assess">Skip to the scenario</button>
+    <button id="btnRestart" data-act="restartAny">Start over</button>
+    <button data-act="full">Full screen</button>
+  </div>
+</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="i-phone" d="M5.500 3h2.700l1.300 3.600-1.800 1.400a8.500 8.500 0 0 0 4.300 4.300l1.400-1.800 3.600 1.300v2.700a1.500 1.500 0 0 1-1.600 1.500C9.300 15.600 4.400 10.700 4 4.600A1.500 1.500 0 0 1 5.500 3z"/></defs></svg>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const QUEUES=['Local Responders','National Responders','Provincial Responders','Regional Responders'];
+const CODES=['Crisis Intervention and Support / intervention de crise et de soutien','Emergency/Imminent Risk / urgence / risque imminent','Hang up/Silent / la personne a raccroché sans dire un mot','Inappropriate / appel inapproprié','Other / autre'];
+const SC={
+  practice:{queue:'National Responders',num:'4165550142',numShow:'416-555-0142',code:CODES[4],event:'The call connects. For this practice run, nothing else happens on the line.'},
+  assess:{queue:'Provincial Responders',num:'6475550178',numShow:'647-555-0178',code:CODES[2],event:'The call connects, but nobody speaks. After a few seconds the line goes quiet.'}
+};
+const digits=s=>String(s).replace(/\D/g,'').replace(/^1(?=\d{10}$)/,'');
+const mmss=(s,pad)=>{const m=Math.floor(s/60);return (pad?String(m).padStart(2,'0'):m)+':'+String(s%60).padStart(2,'0');};
+const show=(el,on)=>{el.hidden=!on;};
+const esc=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+
+let mode='practice', S, R, callId=0;
+function reset(){
+  callId++;
+  S={view:'profile',makeCall:false,queue:null,qFocus:false,nFocus:false,call:null,acwOpen:false,acwSecs:300,code:null,done:false};
+  R={placed:false,queue:'',num:'',holdUsed:false,heldAtEnd:false,transfer:false,ended:false,code:null,done:false,timeout:false};
+  $('qInput').value=''; $('nInput').value=''; $('wInput').value='';
+}
+
+/* ---------- render ---------- */
+function render(){
+  show($('viewProfile'),S.view==='profile'); show($('viewWorkspace'),S.view==='workspace');
+  $('btnWorkspace').classList.toggle('on',S.view==='workspace');
+  show($('makeCall'),S.makeCall);
+  show($('qChip'),!!S.queue); show($('qInputWrap'),!S.queue); $('qChipText').textContent=S.queue||'';
+  const qOpen=S.makeCall&&!S.queue&&S.qFocus;
+  if(qOpen){ const f=$('qInput').value.trim().toLowerCase(); const list=QUEUES.filter(x=>x.toLowerCase().includes(f));
+    $('qResults').innerHTML='<div class="lbl">Queues ('+list.length+')</div>'+(list.map(x=>'<button data-q="'+esc(x)+'">'+esc(x)+'<small>Queue</small></button>').join('')||'<p style="margin:6px;color:var(--muted)">No matching queues.</p>'); }
+  show($('qResults'),qOpen);
+  const nv=$('nInput').value.trim();
+  show($('nResults'),S.makeCall&&S.nFocus&&nv!==''); $('nEcho').textContent=nv;
+  $('btnDial').disabled=!(S.queue&&digits(nv).length===10);
+  const c=S.call;
+  show($('convEmpty'),!c); show($('convCard'),!!c); show($('waiting'),!c); show($('callPane'),!!c);
+  if(c){
+    const live=c.status==='connected';
+    $('ccPlace').textContent=$('chPlace').textContent='Toronto ON'; $('ccQueue').textContent=c.queue; $('sdQueue').textContent=c.queue; $('sdNum').textContent=c.num;
+    $('sdState').textContent=c.status==='dialing'?'Dialing':live?(c.held?'On hold':'Connected'):'Disconnected';
+    ['btnPad','btnMute','btnHold','btnTransfer','btnConsult','btnConf','btnEnd'].forEach(id=>$(id).disabled=!live&&!(id==='btnEnd'&&c.status==='dialing')); ['btnMute','btnHold','btnTransfer','btnConsult','btnConf'].forEach(id=>$(id).style.visibility=c.status==='dialing'?'hidden':'visible');
+    $('btnMute').classList.toggle('on',c.muted); $('btnMute').setAttribute('aria-pressed',c.muted);
+    $('btnHold').classList.toggle('on',c.held); $('btnHold').setAttribute('aria-pressed',c.held);
+    const badge=c.status==='dialing'?'Dialing…':c.status==='ended'?'Disconnected':c.held?'On hold':c.muted?'Muted':'Connected';
+    $('chBadge').textContent=badge;
+    $('btnAcw').disabled=c.status!=='ended'; $('btnAcw').classList.toggle('dot',c.status==='ended'&&!S.acwOpen); $('btnAcw').classList.toggle('on',S.acwOpen);
+    show($('event'),c.status!=='dialing'); $('eventText').textContent=c.status==='ended'?'The call has ended. Complete your after-call work.':SC[mode].event;
+  }
+  const acw=!!c&&c.status==='ended'&&S.acwOpen; show($('acwPane'),acw);
+  if(acw){ const f=$('wInput').value.trim().toLowerCase();
+    $('codes').innerHTML=CODES.filter(x=>x.toLowerCase().includes(f)).map(x=>'<li><button data-code="'+esc(x)+'" class="'+(S.code===x?'sel':'')+'">'+esc(x)+'</button></li>').join('');
+    $('acwStatus').innerHTML=S.code?'Wrap-up code is set<b>'+esc(S.code)+'</b>':'Wrap-up code is required<b>Select wrap-up code</b>';
+    $('btnDone').disabled=!S.code; }
+  tick(false);
+}
+function tick(advance){
+  const c=S.call; if(!c)return;
+  if(advance){ if(c.status==='connected')c.secs++; if(c.status==='ended'&&S.acwSecs>0){ S.acwSecs--; if(S.acwSecs===0){ R.timeout=true; finish(false); return; } } }
+  $('chTimer').textContent=mmss(c.secs);
+  $('ccStatus').textContent=c.status==='dialing'?'Dialing…':c.status==='connected'?mmss(c.secs):'After call work '+mmss(S.acwSecs);
+  $('acwTimer').textContent=mmss(S.acwSecs,true);
+}
+setInterval(()=>tick(true),1000);
+let toastTimer;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true,3600); }
+
+/* ---------- actions ---------- */
+function dial(){
+  const id=++callId, num=$('nInput').value.trim();
+  S.call={status:'dialing',secs:0,muted:false,held:false,queue:S.queue,num}; S.makeCall=false;
+  R.placed=true; R.queue=S.queue; R.num=digits(num);
+  setTimeout(()=>{ if(callId===id&&S.call&&S.call.status==='dialing'){ S.call.status='connected'; after(); } },2200);
+}
+function endCall(){ const c=S.call; R.heldAtEnd=c.held; R.ended=true; c.status='ended'; c.held=false; c.muted=false; }
+function finish(byUser){ R.done=byUser; R.code=S.code; S.done=true; S.call=null; S.acwOpen=false; S.queue=null; S.code=null; $('qInput').value=''; $('nInput').value=''; if(!byUser)toast('After-call work timed out. You are ready for a new interaction.'); after(); }
+
+$('app').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  if(b.hasAttribute('data-inert')){ toast('That control is not part of this simulation.'); return; }
+  const id=b.id;
+  if(id==='btnWorkspace'){ S.view=S.view==='workspace'?'profile':'workspace'; if(S.view==='profile')S.makeCall=false; }
+  else if(id==='btnNewCall'){ if(S.call){ toast('Finish the current interaction before you start another call.'); } else S.makeCall=!S.makeCall; }
+  else if(id==='qClear'){ S.queue=null; $('qInput').value=''; }
+  else if(id==='btnDial'){ dial(); }
+  else if(id==='btnMute'){ S.call.muted=!S.call.muted; }
+  else if(id==='btnHold'){ S.call.held=!S.call.held; if(S.call.held)R.holdUsed=true; }
+  else if(id==='btnTransfer'){ R.transfer=true; toast(mode==='practice'?'Do not use Transfer. The job aid marks this control as "Don\'t use".':'Transfer selected. Nothing was transferred in this simulation.'); }
+  else if(id==='btnEnd'){ endCall(); }
+  else if(id==='btnAcw'){ S.acwOpen=!S.acwOpen; }
+  else if(b.dataset.code){ S.code=b.dataset.code; }
+  else if(id==='btnDone'){ finish(true); return; }
+  after();
+});
+$('qResults').addEventListener('pointerdown',e=>{ const b=e.target.closest('[data-q]'); if(b){ e.preventDefault(); S.queue=b.dataset.q; S.qFocus=false; after(); } });
+$('qInput').addEventListener('focus',()=>{S.qFocus=true;after();}); $('qInput').addEventListener('blur',()=>{S.qFocus=false;after();}); $('qInput').addEventListener('input',after);
+$('nInput').addEventListener('focus',()=>{S.nFocus=true;after();}); $('nInput').addEventListener('blur',()=>{S.nFocus=false;after();}); $('nInput').addEventListener('input',after);
+$('nInput').addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); $('nInput').blur(); } });
+$('qInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const first=$('qResults').querySelector('[data-q]'); if(first){ e.preventDefault(); S.queue=first.dataset.q; $('qInput').blur(); after(); } } });
+$('wInput').addEventListener('input',after);
+
+/* ---------- guided practice ---------- */
+const P=SC.practice;
+const STEPS=[
+ {title:'Open the Agent Workspace',side:'below',how:'Select the <b>Agent Workspace</b> icon in the top bar. Hover over an icon to see its name.',
+  know:'The Agent Workspace is where you handle interactions. Outbound calls start from the Conversations panel inside it.',
+  tag:'Select Agent Workspace',target:()=>[$('btnWorkspace')],check:()=>S.view==='workspace'},
+ {title:'Start a new call',side:'right',how:'In the Conversations panel, select the <b>Start a New Call</b> icon.',
+  know:'The Conversations panel lists your active interactions. The icons beside its title start new outbound conversations.',
+  tag:'Select Start a New Call',left:true,target:()=>[$('btnNewCall')],check:()=>S.makeCall||!!S.call},
+ {title:'Select a queue',side:'right',anchor:()=>[$('makeCall')],how:'Click <b>On behalf of queue</b> and choose <span class="code">'+P.queue+'</span>.',
+  know:'You can choose from Local Responders, National Responders, Provincial Responders or Regional Responders. Typing part of the name narrows the list.',
+  tag:'Choose the queue',left:true,
+  target:()=>{ const r=$('qResults').querySelector('[data-q="'+P.queue+'"]'); return [(!$('qResults').hidden&&r)?r:(S.queue?$('qChip'):$('qInput'))]; },
+  check:()=>S.queue===P.queue||!!S.call,
+  nudge:()=>S.queue&&S.queue!==P.queue?'This practice call goes out on behalf of '+P.queue+'. Select the × beside the queue name and choose again.':''},
+ {title:'Enter the phone number',side:'right',anchor:()=>[$('makeCall')],how:'Click <b>Enter a number or contact</b> and type <span class="code">'+P.numShow+'</span>.',
+  know:'You can dial a number or select someone from the directory. This simulation uses fictional numbers only.',
+  tag:'Type the number',left:true,target:()=>[$('nInput')],check:()=>digits($('nInput').value)===P.num||!!S.call,
+  nudge:()=>{ const d=digits($('nInput').value); return d.length>=10&&d!==P.num?'That is not the practice number. Enter '+P.numShow+'.':''; }},
+ {title:'Place the call',side:'right',anchor:()=>[$('makeCall')],how:'Press the green <b>Phone</b> button.',
+  know:'This button can sometimes be hidden behind the search results. If you cannot see it, press Enter or click the Make Call heading to close the results.',
+  tag:()=>!$('nResults').hidden?'Results are covering the Phone button':'Press to call',left:true,target:()=>[!$('nResults').hidden?$('nResults'):$('btnDial')],check:()=>!!S.call||S.done,
+  nudge:()=>!$('nResults').hidden?'The search results are covering the Phone button. Press Enter or click the Make Call heading to close them.':''},
+ {title:'Place the call on hold',side:'below',how:'Wait for the call to connect, then select <b>Hold</b>.',
+  know:'<span>Call controls, left to right after the dialpad:</span><ol><li>Mute</li><li>Hold</li><li>Transfer (do not use)</li><li>Consult</li><li>Conference</li><li>End the call</li></ol>',
+  tag:'Select Hold',left:true,target:()=>[$('btnHold')],check:()=>!!S.call&&(S.call.held||S.call.status==='ended')||S.done},
+ {title:'Resume the call',side:'below',how:'Select <b>Hold</b> again to take the call off hold.',
+  know:'A highlighted control is switched on. The status label beside the controls tells you whether the call is connected, muted or on hold.',
+  tag:'Select Hold again',left:true,target:()=>[$('btnHold')],check:()=>!!S.call&&(!S.call.held)||S.done},
+ {title:'End the call',side:'below',how:'Select the red <b>End the call</b> button.',
+  know:'Do not use Transfer for these calls. The job aid marks it "Don\'t use".',
+  tag:'End the call',left:true,target:()=>[$('btnEnd')],check:()=>!!S.call&&S.call.status==='ended'||S.done},
+ {title:'Open after-call work',side:'below',how:'Select the <b>After Call Work</b> icon.',
+  know:'Most outbound calls are documented using a linked form in iCarol. The wrap-up code is recorded here, in the phone system.',
+  tag:'Select After Call Work',target:()=>[$('btnAcw')],check:()=>S.acwOpen||S.done},
+ {title:'Select a wrap-up code',side:'left',anchor:()=>[$('acwPane')],how:'Choose <span class="code">Other / autre</span> for this practice call.',
+  know:'A wrap-up code is required. Select the code that fits what happened on the call. You can type in the search box to find one.',
+  tag:'Choose this code',target:()=>[$('codes').querySelector('[data-code="'+P.code+'"]')],check:()=>S.code===P.code||S.done,
+  nudge:()=>S.code&&S.code!==P.code?'For this practice call, choose Other / autre.':''},
+ {title:'Select Done',side:'left',how:'Select <b>Done</b> to finish after-call work.',
+  know:'You will not receive a new interaction within the five minutes allotted for after-call work unless you select Done. Once the five minutes is up, you will be ready to receive a new interaction if you are still on queue.',
+  tag:'Select Done',target:()=>[$('btnDone')],check:()=>S.done}
+];
+let T={i:0,advancing:false,done:false};
+function placeRing(){
+  const ring=$('ring');
+  if(mode!=='practice'||T.done||T.advancing||welcome){ ring.hidden=true; return; }
+  const st=STEPS[T.i], els=st.target().filter(el=>el&&el.getClientRects().length); if(!els.length){ring.hidden=true;return;}
+  const ar=$('app').getBoundingClientRect(); let l=1e9,t=1e9,r=-1e9,b=-1e9;
+  els.forEach(el=>{const x=el.getBoundingClientRect(); l=Math.min(l,x.left);t=Math.min(t,x.top);r=Math.max(r,x.right);b=Math.max(b,x.bottom);});
+  ring.style.left=(l-ar.left-5)+'px'; ring.style.top=(t-ar.top-5)+'px'; ring.style.width=(r-l+10)+'px'; ring.style.height=(b-t+10)+'px';
+  ring.hidden=false;
+}
+function tutorCheck(){
+  if(mode!=='practice'||T.done||T.advancing)return;
+  if(STEPS[T.i].check()){
+    T.advancing=true; renderCoach(); placeRing();
+    setTimeout(()=>{ T.i++; T.advancing=false; if(T.i>=STEPS.length)T.done=true; placeRing(); renderCoach(); tutorCheck(); },900);
+  } else renderCoach();
+}
+function after(){ render(); if(mode==='practice')tutorCheck(); else renderCoach(); placeRing(); placeCallout(); }
+
+/* ---------- assessment ---------- */
+const X=SC.assess;
+const CRIT=[
+ {text:'Placed an outbound call from the Agent Workspace',ok:()=>R.placed,why:()=>'No call was placed.'},
+ {text:'Called on behalf of the '+X.queue+' queue',ok:()=>R.queue===X.queue,why:()=>R.queue?'The call went out on behalf of '+R.queue+'.':'No queue was selected.'},
+ {text:'Dialled '+X.numShow,ok:()=>R.num===X.num,why:()=>R.num?'The number dialled was '+R.num+'.':'No number was dialled.'},
+ {text:'Placed the call on hold and resumed it before ending',ok:()=>R.holdUsed&&!R.heldAtEnd,why:()=>R.holdUsed?'The call was still on hold when it ended.':'Hold was not used.'},
+ {text:'Did not use Transfer',ok:()=>!R.transfer,why:()=>'Transfer was selected. The job aid marks this control as "Don\'t use".'},
+ {text:'Selected the wrap-up code that matches the call',ok:()=>R.code===X.code,why:()=>R.code?'You selected "'+R.code+'". Nobody spoke on this call, so the matching code is Hang up/Silent.':'No wrap-up code was selected.'},
+ {text:'Selected Done to finish after-call work',ok:()=>R.done,why:()=>R.timeout?'After-call work ran out the full five minutes.':'Done was not selected, so you would not receive a new interaction until the five minutes ran out.'}
+];
+const QUIZ=[
+ {q:'Which call control should you not use?',opts:['Mute','Hold','Transfer','Conference'],a:2,why:'The job aid lists Transfer as "Don\'t use".'},
+ {q:'You typed the number, but you cannot see the green Phone button. What is the most likely reason?',opts:['The queue is closed','The button is hidden behind the search results','You are not on queue','The number is blocked'],a:1,why:'The Phone button can sometimes be hidden behind the search results.'},
+ {q:'You end an outbound call and do not select Done. What happens?',opts:['You receive new interactions right away','You go off queue','You will not receive a new interaction until the five minutes of after-call work are up','The call is not saved'],a:2,why:'Selecting Done releases you early. Otherwise you are ready again once the five minutes are up, if you are still on queue.'},
+ {q:'Where are most outbound calls documented?',opts:['In the wrap-up code search box','In a linked form in iCarol','In the Conversations panel','In an email to your supervisor'],a:1,why:'Most outbound calls are documented using a linked form in iCarol.'}
+];
+let A={start:0,secs:0,res:[],answers:[]};
+
+
+let whyOpen=false, briefOpen=true, lastStep=-1, welcome=true, menuOpen=false;
+function renderCoach(){
+  const co=$('callout'), br=$('brief'), ov=$('overlay');
+  // top strip
+  $('stageLabel').textContent=mode==='practice'?(T.done?'Guided practice complete':'Guided practice, step '+(T.i+1)+' of '+STEPS.length):mode==='assess'?'Scenario assessment':mode==='quiz'?'Knowledge check':'Results';
+  $('prog').style.width=(mode==='practice'?Math.round((T.i+(T.advancing?1:0))/STEPS.length*100):100)+'%';
+  show($('btnSkip'),mode==='practice'&&!T.done); $('btnRestart').textContent=mode==='assess'?'Restart the scenario':'Restart practice';
+  // practice callout
+  show($('menuPop'),menuOpen); $('fab').setAttribute('aria-expanded',menuOpen); show($('welcome'),welcome); show($('fab'),!welcome);
+  if(mode==='practice'&&!T.done&&!welcome){
+    if(lastStep!==T.i){ whyOpen=false; lastStep=T.i; }
+    const st=STEPS[T.i], n=T.advancing?'':(st.nudge?st.nudge():'');
+    const h='<p class="count">Step '+(T.i+1)+' of '+STEPS.length+'</p><h2>'+st.title+'</h2><p>'+st.how+'</p>'+
+      (T.advancing?'<p class="okmsg">Correct.</p>':'')+(n?'<p class="nudge">'+n+'</p>':'')+
+      (T.advancing?'':'<button class="why" data-act="why" aria-expanded="'+whyOpen+'">'+(whyOpen?'Hide the tip':'Show a tip')+'</button>'+(whyOpen?'<div class="know">'+st.know+'</div>':''));
+    if(co.dataset.h!==h){ co.innerHTML=h; co.dataset.h=h; }
+    show(co,true);
+  } else show(co,false);
+  // practice complete overlay
+  const pdone=mode==='practice'&&T.done;
+  if(pdone&&ov.hidden){ ov.innerHTML='<div class="panel"><h2>Practice complete</h2><p>You placed an outbound call, used the call controls and finished after-call work.</p><p>Next is a scenario with no highlights. You are scored on what you do in the phone system.</p><div class="row"><button class="btn primary" data-act="assess">Start the scenario</button><button class="btn" data-act="restart">Repeat practice</button></div></div>'; }
+  show(ov,pdone);
+  // assessment brief
+  if(mode==='assess'){
+    const h='<button class="briefhead" data-act="brief" aria-expanded="'+briefOpen+'"><span>Your task</span><span aria-hidden="true">'+(briefOpen?'–':'+')+'</span></button>'+
+      (briefOpen?'<ol><li>Call <span class="code">'+X.numShow+'</span> on behalf of the <b>'+X.queue+'</b> queue.</li><li>Once connected, place the call on hold, then resume it.</li><li>Read the note under the call, then end the call.</li><li>Finish after-call work so that you can receive new interactions.</li></ol>':'')+
+      (S.done?'<p class="okmsg">You are back on queue.</p>':'')+
+      '<div class="row"><button class="btn primary" data-act="submit">'+(S.done?'Continue':'Submit as is')+'</button></div>';
+    if(br.dataset.h!==h){ br.innerHTML=h; br.dataset.h=h; }
+    show(br,true);
+  } else show(br,false);
+  placeCallout();
+}
+function placeCallout(){
+  const co=$('callout'); if(co.hidden)return;
+  const st=STEPS[T.i]; let els=(st.anchor?st.anchor():st.target()).filter(el=>el&&el.getClientRects().length);
+  const vw=window.innerWidth, vh=window.innerHeight, w=co.offsetWidth, h=co.offsetHeight, G=16;
+  if(!els.length){ co.style.left=(vw-w)/2+'px'; co.style.top='80px'; return; }
+  let l=1e9,t=1e9,r=-1e9,b=-1e9; els.forEach(el=>{const x=el.getBoundingClientRect(); l=Math.min(l,x.left);t=Math.min(t,x.top);r=Math.max(r,x.right);b=Math.max(b,x.bottom);});
+  const pos={right:[r+G,t],left:[l-w-G,t],below:[l,b+G],above:[l,t-h-G]};
+  const fits=p=>p[0]>=8&&p[0]+w<=vw-8&&p[1]>=8&&p[1]+h<=vh-8;
+  const order=[st.side||'below','below','right','left','above'];
+  let p=pos[order.find(s=>fits(pos[s]))||order[0]];
+  if(!fits(p)){ const s=order[0]; p=pos[s].slice(); }
+  co.style.left=Math.max(8,Math.min(p[0],vw-w-8))+'px'; co.style.top=Math.max(8,Math.min(p[1],vh-h-8))+'px';
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b){ act(b.dataset.act); return; } if(menuOpen&&!e.target.closest('#menuPop')){ menuOpen=false; renderCoach(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&menuOpen){ menuOpen=false; renderCoach(); $('fab').focus(); } });
+
+function setStage(m){
+  mode=m; show($('simView'),m==='practice'||m==='assess'); show($('cardView'),m==='quiz'||m==='results');
+}
+let qi=0;
+function act(a){
+  if(a==='home'){ if(window.parent!==window){ window.parent.postMessage('sim-home','*'); } else { window.location.href='index.html'; } return; }
+  if(a==='menu'){ menuOpen=!menuOpen; renderCoach(); return; }
+  menuOpen=false;
+  if(a==='begin'){ welcome=false; after(); }
+  else if(a==='why'){ whyOpen=!whyOpen; renderCoach(); }
+  else if(a==='brief'){ briefOpen=!briefOpen; renderCoach(); }
+  else if(a==='full'){ renderCoach(); try{ const d=document.documentElement; (document.fullscreenElement?document.exitFullscreen():d.requestFullscreen()).catch(()=>toast('Full screen is not available here. Open the file in a browser tab.')); }catch(_){ toast('Full screen is not available here. Open the file in a browser tab.'); } }
+  else if(a==='restartAny'){ act(mode==='assess'?'resetAssess':'restart'); return; }
+  else if(a==='restart'){ reset(); T={i:0,advancing:false,done:false}; lastStep=-1; setStage('practice'); after(); }
+  else if(a==='assess'||a==='resetAssess'){ welcome=false; reset(); briefOpen=true; A={start:Date.now(),secs:0,res:[],answers:QUIZ.map(()=>-1)}; setStage('assess'); after(); }
+  else if(a==='submit'){ if(!S.done)R.code=S.code; A.secs=Math.round((Date.now()-A.start)/1000); A.res=CRIT.map(c=>({ok:!!c.ok(),why:c.why()})); qi=0; setStage('quiz'); renderCoach(); placeRing(); renderQuiz(); }
+  else if(a==='next'){ const r=document.querySelector('input[name=q]:checked'); if(!r){ return; } A.answers[qi]=+r.value; qi++; if(qi<QUIZ.length)renderQuiz(); else { setStage('results'); renderCoach(); renderResults(); } }
+}
+function renderQuiz(){
+  const x=QUIZ[qi];
+  $('cardView').innerHTML='<div class="panel wide"><p class="count">Knowledge check, question '+(qi+1)+' of '+QUIZ.length+'</p>'+
+    '<form id="quizForm"><fieldset><legend>'+esc(x.q)+'</legend>'+x.opts.map((o,j)=>'<label for="qo'+j+'"><input type="radio" id="qo'+j+'" name="q" value="'+j+'"><span>'+esc(o)+'</span></label>').join('')+'</fieldset></form>'+
+    '<div class="row"><button class="btn primary" data-act="next" id="btnNext" disabled>'+(qi===QUIZ.length-1?'See my results':'Next question')+'</button></div></div>';
+  $('quizForm').addEventListener('submit',e=>e.preventDefault());
+  $('quizForm').addEventListener('change',()=>{$('btnNext').disabled=false;});
+  const f=$('cardView').querySelector('input'); if(f)f.focus();
+}
+function renderResults(){
+  const tp=A.res.filter(r=>r.ok).length, qp=QUIZ.filter((x,i)=>A.answers[i]===x.a).length, total=CRIT.length+QUIZ.length, pct=Math.round((tp+qp)/total*100);
+  $('cardView').innerHTML='<div class="panel wide"><h2>Your results</h2>'+
+    '<div class="score"><strong>'+pct+'%</strong><span>Scenario: '+tp+' of '+CRIT.length+'</span><span>Knowledge check: '+qp+' of '+QUIZ.length+'</span><span>Time on scenario: '+mmss(A.secs)+'</span></div>'+
+    '<h3>Scenario</h3><ul class="res">'+CRIT.map((c,i)=>{ const r=A.res[i]; return '<li><span class="pill '+(r.ok?'ok':'no')+'">'+(r.ok?'Met':'Not met')+'</span><div>'+esc(c.text)+(r.ok?'':'<small>'+esc(r.why)+'</small>')+'</div></li>'; }).join('')+'</ul>'+
+    '<h3>Knowledge check</h3><ul class="res">'+QUIZ.map((x,i)=>{ const ok=A.answers[i]===x.a;
+      return '<li><span class="pill '+(ok?'ok':'no')+'">'+(ok?'Correct':'Not yet')+'</span><div>'+esc(x.q)+'<small>'+(ok?'':'You chose: '+esc(x.opts[A.answers[i]])+'. Correct answer: '+esc(x.opts[x.a])+'. ')+esc(x.why)+'</small></div></li>'; }).join('')+'</ul>'+
+    '<div class="row"><button class="btn primary" data-act="assess">Retry the scenario</button><button class="btn" data-act="restart">Back to guided practice</button><button class="btn" data-act="home">All simulations</button></div></div>';
+  $('cardView').scrollTop=0;
+}
+
+reset(); setStage('practice'); render(); renderCoach(); placeRing();
+window.addEventListener('resize',()=>{placeRing();placeCallout();}); $('appscroll').addEventListener('scroll',()=>{placeRing();placeCallout();});
+window.__sim={get S(){return S;},get R(){return R;},get T(){return T;}};
+})();
+</script>
+</body>
+</html>
