@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="Visual Recognition – 30 minutes"><title>Visual Recognition – 30 minutes</title><defs><style type="text/css"><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap');
+      .num  { font-family: 'Poppins', sans-serif; font-weight: 700; }
+      .ttl  { font-family: 'Poppins', sans-serif; font-weight: 600; }
+      .body { font-family: 'Poppins', sans-serif; font-weight: 400; }
+      .pill { font-family: 'Poppins', sans-serif; font-weight: 500; }
+    ]]></style></defs><rect width="600" height="600" fill="#FFFFFF"/><g transform="translate(58 48)"><g fill="none" stroke="#F59F2A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="52" cy="48" r="34"/><g transform="rotate(45 52 48)"><rect x="88" y="36" width="48" height="24" rx="4"/><rect x="96" y="42" width="12" height="12" transform="rotate(45 102 48)"/><rect x="114" y="42" width="12" height="12" transform="rotate(45 120 48)"/></g></g></g><text class="ttl" x="60" y="278" font-size="42" fill="#F59F2A">Visual Recognition</text><text class="body" x="60" y="336" font-size="26.5" fill="#4C4C4E">
+    <tspan x="60" dy="0">Recognise common</tspan>
+    <tspan x="60" dy="42">asbestos materials using</tspan>
+    <tspan x="60" dy="42">visual indicators</tspan>
+  </text><rect x="60" y="470" width="252" height="76" rx="38" fill="#F59F2A"/><g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="106" cy="510" r="15"/><line x1="100" y1="490" x2="112" y2="490"/><line x1="106" y1="490" x2="106" y2="495"/><path d="M106 510 V501"/><path d="M106 510 L113 514"/></g><text class="pill" x="142" y="520" font-size="27" fill="#FFFFFF">30 minutes</text></svg>

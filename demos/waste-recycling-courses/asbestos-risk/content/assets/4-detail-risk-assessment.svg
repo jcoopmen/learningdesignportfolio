@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="Risk Assessment – 10 minutes"><title>Risk Assessment – 10 minutes</title><defs><style type="text/css"><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap');
+      .num  { font-family: 'Poppins', sans-serif; font-weight: 700; }
+      .ttl  { font-family: 'Poppins', sans-serif; font-weight: 600; }
+      .body { font-family: 'Poppins', sans-serif; font-weight: 400; }
+      .pill { font-family: 'Poppins', sans-serif; font-weight: 500; }
+    ]]></style></defs><rect width="600" height="600" fill="#FFFFFF"/><g transform="translate(58 48)"><g fill="none" stroke="#79194F" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M70 14 L131 120 H9 Z"/><line x1="70" y1="52" x2="70" y2="88"/><circle cx="70" cy="102" r="4.5" fill="#79194F" stroke="none"/></g></g><text class="ttl" x="60" y="278" font-size="42" fill="#79194F">Risk Assessment</text><text class="body" x="60" y="336" font-size="26.5" fill="#4C4C4E">
+    <tspan x="60" dy="0">Assess asbestos risk and select</tspan>
+    <tspan x="60" dy="42">appropriate responses</tspan>
+  </text><rect x="60" y="470" width="252" height="76" rx="38" fill="#79194F"/><g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="106" cy="510" r="15"/><line x1="100" y1="490" x2="112" y2="490"/><line x1="106" y1="490" x2="106" y2="495"/><path d="M106 510 V501"/><path d="M106 510 L113 514"/></g><text class="pill" x="142" y="520" font-size="27" fill="#FFFFFF">10 minutes</text></svg>

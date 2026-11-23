@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="Module 4"><title>Module 4</title><defs><style type="text/css"><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap');
+      .num  { font-family: 'Poppins', sans-serif; font-weight: 700; }
+      .ttl  { font-family: 'Poppins', sans-serif; font-weight: 600; }
+      .body { font-family: 'Poppins', sans-serif; font-weight: 400; }
+      .pill { font-family: 'Poppins', sans-serif; font-weight: 500; }
+    ]]></style></defs><rect width="600" height="600" fill="#FFFFFF"/><text class="num" x="300" y="432" font-size="440" fill="#EADAE3" text-anchor="middle">4</text><rect x="60" y="505" width="480" height="18" fill="#79194F"/></svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="Containment – 15 minutes"><title>Containment – 15 minutes</title><defs><style type="text/css"><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap');
+      .num  { font-family: 'Poppins', sans-serif; font-weight: 700; }
+      .ttl  { font-family: 'Poppins', sans-serif; font-weight: 600; }
+      .body { font-family: 'Poppins', sans-serif; font-weight: 400; }
+      .pill { font-family: 'Poppins', sans-serif; font-weight: 500; }
+    ]]></style></defs><rect width="600" height="600" fill="#FFFFFF"/><g transform="translate(58 48)"><g fill="none" stroke="#5D1E53" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="28" y="12" width="84" height="116" rx="20"/><line x1="28" y1="34" x2="112" y2="34"/><line x1="28" y1="56" x2="112" y2="56"/><line x1="28" y1="100" x2="112" y2="100"/><path d="M70 64 L84 88 H56 Z"/><line x1="70" y1="72" x2="70" y2="80"/></g></g><text class="ttl" x="60" y="278" font-size="42" fill="#5D1E53">Containment</text><text class="body" x="60" y="336" font-size="26.5" fill="#4C4C4E">
+    <tspan x="60" dy="0">Contain and report asbestos</tspan>
+    <tspan x="60" dy="42">risks following workplace</tspan>
+    <tspan x="60" dy="42">procedures</tspan>
+  </text><rect x="60" y="470" width="252" height="76" rx="38" fill="#5D1E53"/><g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="106" cy="510" r="15"/><line x1="100" y1="490" x2="112" y2="490"/><line x1="106" y1="490" x2="106" y2="495"/><path d="M106 510 V501"/><path d="M106 510 L113 514"/></g><text class="pill" x="142" y="520" font-size="27" fill="#FFFFFF">15 minutes</text></svg>
