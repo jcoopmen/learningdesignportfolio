@@ -289,3 +289,7 @@ body { overflow-x: clip; }
 
 /* The main case study screenshot is a link to the demo */
 a.preview { display: block; }
+
+/* Captions clear the offset shadow under each image. */
+.demo { gap: 1.875rem; }
+.shots figure { gap: 1.375rem; }
