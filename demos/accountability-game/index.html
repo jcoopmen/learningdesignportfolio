@@ -109,7 +109,7 @@ button { font: inherit; color: inherit; }
 .rule > b { display: block; font-family: var(--f-disp); font-weight: 600; color: var(--blue); letter-spacing: .03em; margin-bottom: calc(.3 * var(--u)); }
 
 .k, .coach p b { font-weight: 700; color: #1a4a99; }
-.m { font-weight: 700; background: linear-gradient(transparent 56%, #ffe08a 56%, #ffe08a 94%, transparent 94%); }
+.m { font-weight: 700; }
 .chose .k { color: inherit; }
 
 .wait { display: inline-block; margin-top: calc(.7 * var(--u)); font-size: max(12px, calc(1.5 * var(--u))); font-weight: 700; color: #7a4100; background: #ffe9c2; padding: .2em .8em; border-radius: 99px; }
@@ -129,7 +129,7 @@ button { font: inherit; color: inherit; }
 .split p { max-width: calc(46 * var(--u)); }
 .logo { font-family: var(--f-disp); font-weight: 700; font-size: calc(10.5 * var(--u)); line-height: .95; margin: 0; letter-spacing: -.01em; }
 .logo span { display: block; }
-.logo .hl { color: var(--blue); background: linear-gradient(transparent 62%, var(--sun) 62%, var(--sun) 92%, transparent 92%); display: inline-block; padding: 0 .08em; }
+.logo .hl { color: var(--blue); display: inline-block; }
 .sub { font-family: var(--f-disp); font-weight: 600; font-size: max(14px, calc(2.3 * var(--u))); color: var(--mute); margin: calc(1.4 * var(--u)) 0 calc(2.2 * var(--u)) !important; }
 .small { font-size: max(11px, calc(1.45 * var(--u))); color: var(--mute); margin-top: calc(1.8 * var(--u)) !important; }
 .hero { width: calc(34 * var(--u)); height: auto; display: block; }
@@ -253,7 +253,7 @@ button { font: inherit; color: inherit; }
         <div class="lid">
           <span class="cam"></span>
           <div class="win">
-            <div class="winbar"><span class="addr">FastJump: myproperty</span><span class="simtag">Practice copy for training</span></div>
+            <div class="winbar"><span class="addr">larkfield.example/myproperty</span><span class="simtag">Practice copy for training</span></div>
             <div class="mp">
               <div class="mp-head"><span class="mp-title">My Property</span><span id="mp-user">Maya Santos</span></div>
               <div class="mp-tabs" id="mp-tabs" role="tablist"></div>
@@ -483,7 +483,7 @@ var OPEN = 'Open My Property';
 var DEC = [
   { // situation 1
     q: 'The barcode on Maya’s spectrum analyzer is worn and hard to read. What should she do?',
-    rule: 'Request a replacement through the Property page (FastJump: property) when a barcode is damaged or worn, so that the equipment can be identified and scanned.',
+    rule: 'Request a replacement through the Property page when a barcode is damaged or worn, so that the equipment can be identified and scanned.',
     opts: [
       { t: 'Leave it as it is. The analyzer works, and she knows which one it is.', fb: 'A worn barcode makes the analyzer hard to identify and scan.',
         out: [{ text: 'Maya leaves the barcode as it is. It is still hard to read.' }] },
@@ -766,7 +766,7 @@ function finish() {
   var n = S.right.filter(function (r) { return r === true; }).length;
   $('scr-end').innerHTML = '<div class="eye">DEMO COMPLETE</div><h2 class="big sm">' + (n === 5 ? 'All 5 decisions correct' : 'You got ' + n + ' of 5 decisions right') + '</h2><div class="rows">' +
     RECAP.map(function (r, i) { var ok = S.right[i] === true; return '<div class="row ' + (ok ? 'got' : 'miss') + '"><span class="ink">' + (ok ? '✓' : '✗') + '</span><span>' + r + '</span></div>'; }).join('') +
-    '<div class="row help"><span class="ink">?</span><span><b>Need help?</b> Start at the Property page (FastJump: property). If you cannot complete a task in My Property, send the Property team a request through Zendesk.</span></div>' +
+    '<div class="row help"><span class="ink">?</span><span><b>Need help?</b> Start at the Property page. If you cannot complete a task in My Property, send the Property team a request through Zendesk.</span></div>' +
     '</div><button class="btn" type="button" id="btn-again">Play again</button>';
   showScreen('end');
   $('btn-again').addEventListener('click', function () { sfx('blip'); reset(); startGame(); });

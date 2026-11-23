@@ -297,3 +297,8 @@ a.preview { display: block; }
 /* About reads larger than the AI section. */
 .band--about div > p:not(.actions) { font-size: 1.3125rem; line-height: 1.5; }
 .band--ai .lede { font-size: 1.125rem; }
+
+/* Linked images in More work and on the course list page lift slightly on hover. */
+@media (prefers-reduced-motion: no-preference) {
+  .more a.preview:hover { transform: translate(-3px, -3px); box-shadow: 11px 11px 0 var(--accent); }
+}
